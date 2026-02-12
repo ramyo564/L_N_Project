@@ -291,6 +291,80 @@ body.modal-open {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.devops-service-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.backend-group-divider {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: rgba(88, 166, 255, 0.06);
+}
+
+.backend-group-divider::before,
+.backend-group-divider::after {
+    content: "";
+    height: 1px;
+    flex: 1;
+    background: linear-gradient(to right, transparent, var(--accent-blue), transparent);
+    opacity: 0.55;
+}
+
+.backend-group-title {
+    font-family: var(--font-code);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--accent-blue);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.backend-group-desc {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.devops-group-divider {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: rgba(210, 153, 34, 0.08);
+}
+
+.devops-group-divider::before,
+.devops-group-divider::after {
+    content: "";
+    height: 1px;
+    flex: 1;
+    background: linear-gradient(to right, transparent, var(--accent-orange), transparent);
+    opacity: 0.55;
+}
+
+.devops-group-title {
+    font-family: var(--font-code);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--accent-orange);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.devops-group-desc {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
 /* Enhanced Service Card */
 .service-card {
     background: var(--panel-bg);
@@ -325,6 +399,14 @@ body.modal-open {
 
 .backend-card .card-visual {
     height: 290px;
+}
+
+.frontend-card .card-visual {
+    height: 260px;
+}
+
+.devops-card .card-visual {
+    height: 265px;
 }
 
 /* Card Content (Bottom - Text) */
@@ -503,6 +585,56 @@ body.modal-open {
 
     .backend-card .card-visual {
         height: 220px;
+    }
+
+    .frontend-card .card-visual {
+        height: 200px;
+    }
+
+    .backend-group-divider {
+        flex-wrap: wrap;
+        gap: 0.4rem 0.6rem;
+        padding: 0.5rem 0.65rem;
+    }
+
+    .backend-group-divider::before,
+    .backend-group-divider::after {
+        display: none;
+    }
+
+    .backend-group-title {
+        font-size: 0.74rem;
+    }
+
+    .backend-group-desc {
+        font-size: 0.7rem;
+        white-space: normal;
+        line-height: 1.35;
+    }
+
+    .devops-card .card-visual {
+        height: 210px;
+    }
+
+    .devops-group-divider {
+        flex-wrap: wrap;
+        gap: 0.4rem 0.6rem;
+        padding: 0.5rem 0.65rem;
+    }
+
+    .devops-group-divider::before,
+    .devops-group-divider::after {
+        display: none;
+    }
+
+    .devops-group-title {
+        font-size: 0.74rem;
+    }
+
+    .devops-group-desc {
+        font-size: 0.7rem;
+        white-space: normal;
+        line-height: 1.35;
     }
 
     .status-bar {
