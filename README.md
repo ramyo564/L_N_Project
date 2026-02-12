@@ -102,6 +102,11 @@
 > - 📊 **모니터링**: Prometheus + Grafana + Slack 알림 (5xx > 5%, p95 > 800ms)
 > - 🔄 **복구**: 트래픽 임계점 도달 시 클라우드 재전환 가능한 구조 (Docker Compose 기반)
 
+### 🔗 Dashboard LearnMore Quick Links
+- [Backend Dashboard Index](./Backend/README.md#dashboard-learnmore-index)
+- [Frontend Dashboard Index](./Frontend/README.md#dashboard-learnmore-index)
+- [DevOps Dashboard Index](./Dev/README.md#dashboard-learnmore-index)
+
 #### 🤖 AI 코칭 기능
 
 > ※ AI 기능은 서비스 품질 개선을 위한 분석 파이프라인의 일부로 분리 구성되어 있습니다.

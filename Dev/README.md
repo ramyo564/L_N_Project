@@ -26,6 +26,86 @@
 
 ![Nginx](https://img.shields.io/badge/Nginx-Reverse%20Proxy-009639?logo=nginx) ![Let's Encrypt](https://img.shields.io/badge/Let's%20Encrypt-SSL-003a70?logo=letsencrypt)
 
+<a id="dashboard-learnmore-index"></a>
+## 🔗 Dashboard LearnMore Index
+
+포트폴리오 대시보드의 DevOps `Learn More` 버튼이 아래 앵커로 직접 연결됩니다.
+
+- **[CI Change Detection](#devops-ci-change-detection)**: `paths-filter` 기반 변경 모듈 선택 빌드
+- **[CI Integration Gate](#devops-ci-integration-gate)**: compose 통합 기동/헬스체크/보안 스캔 게이트
+- **[CD WireGuard Deploy](#devops-cd-wireguard)**: VPN 연결 기반 안전 배포 파이프라인
+- **[Image Promotion](#devops-image-promotion)**: digest 기반 안정 태그 승격 및 배포 일관성
+- **[Compose Topology](#devops-compose-topology)**: edge/app/data/observability 멀티 스택 구성
+- **[Docker Build Map](#devops-docker-build-map)**: Spring/FastAPI/Nginx 멀티스테이지 이미지 전략
+- **[Nginx Runtime Validation](#devops-nginx-runtime-validation)**: 엔트리포인트 템플릿/구문 검증으로 부팅 차단
+- **[Edge Security](#devops-edge-security)**: Cloudflare/WireGuard/SSH 최소노출 보안 경계
+- **[Observability Pipeline](#devops-observability-pipeline)**: Prometheus/Grafana/Loki/Alertmanager 관측 체계
+- **[k6 Load Architecture](#devops-k6-load-architecture)**: 시나리오별 부하 검증 및 지표 수집 파이프라인
+- **[Stress Mode Lifecycle](#devops-stress-mode-lifecycle)**: on/refresh/down 자동화로 테스트 환경 운영
+- **[DevOps Troubleshooting](#devops-troubleshooting-patterns)**: 터널/리다이렉트/부하테스트 이슈 해결 패턴
+
+## 📘 Dashboard 카드 상세 설명
+
+<a id="devops-ci-change-detection"></a>
+### CI Change Detection
+- `dorny/paths-filter`로 변경 모듈(Spring/FastAPI/Frontend/Nginx/Monitoring)만 선택 빌드합니다.
+- 불필요한 잡 실행을 줄여 PR 피드백 시간을 단축합니다.
+
+<a id="devops-ci-integration-gate"></a>
+### CI Integration Gate
+- 변경 이미지 digest를 고정한 뒤 `docker compose` 통합 기동/헬스체크를 수행합니다.
+- 게이트 통과 전 취약점 스캔 및 기본 API 프록시 검증을 포함해 배포 리스크를 줄입니다.
+
+<a id="devops-cd-wireguard"></a>
+### CD WireGuard Deploy
+- 배포 시점에만 WireGuard를 올려 홈서버 내부망에 접근합니다.
+- 배포 종료 후 VPN을 항상 내리도록 구성해 상시 노출을 방지합니다.
+
+<a id="devops-image-promotion"></a>
+### Image Promotion
+- SHA 태그 이미지를 digest로 검증한 뒤 안정 태그(dev/prod)로 승격합니다.
+- 배포는 승격 태그만 참조하도록 고정해 재현성과 롤백 일관성을 확보합니다.
+
+<a id="devops-compose-topology"></a>
+### Compose Topology
+- edge(app ingress), app(Spring/FastAPI), data(Postgres/Redis/RabbitMQ/Qdrant), observability를 계층 분리합니다.
+- 구성 분리는 장애 영향 범위와 운영 변경 범위를 줄이는 목적입니다.
+
+<a id="devops-docker-build-map"></a>
+### Docker Build Map
+- Spring/FastAPI/Nginx 모두 멀티스테이지 빌드를 사용해 runtime 이미지를 최소화합니다.
+- 의존성 캐시 레이어를 재사용해 빌드 시간을 안정적으로 단축합니다.
+
+<a id="devops-nginx-runtime-validation"></a>
+### Nginx Runtime Validation
+- 컨테이너 시작 시 템플릿 변수 누락 및 `nginx -t` 문법 검증을 강제합니다.
+- 검증 실패 시 부팅을 차단해 잘못된 설정이 실서비스로 유입되는 것을 막습니다.
+
+<a id="devops-edge-security"></a>
+### Edge Security
+- Cloudflare + Tunnel + VPN + SSH 키 기반 접근을 조합해 외부 노출면을 최소화합니다.
+- 운영 서버는 직접 SSH 공개 대신 내부망 접근 중심으로 관리합니다.
+
+<a id="devops-observability-pipeline"></a>
+### Observability Pipeline
+- Prometheus 메트릭, Loki 로그, Grafana 대시보드, Alertmanager 알림으로 관측 체계를 구성했습니다.
+- 성능 저하와 장애를 지표 기반으로 조기에 감지하고 추적할 수 있습니다.
+
+<a id="devops-k6-load-architecture"></a>
+### k6 Load Architecture
+- 읽기/쓰기/인증/AI 시나리오를 분리해 병목 위치를 기능 단위로 측정합니다.
+- 결과는 요약 리포트와 대시보드 지표로 저장해 개선 전후 비교에 사용합니다.
+
+<a id="devops-stress-mode-lifecycle"></a>
+### Stress Mode Lifecycle
+- `stress-test-on/refresh/down` 스크립트로 부하 테스트 환경 생성/초기화/복구를 자동화합니다.
+- 운영 환경과 테스트 환경을 분리해 데이터 오염과 설정 충돌을 방지합니다.
+
+<a id="devops-troubleshooting-patterns"></a>
+### DevOps Troubleshooting
+- 터널 400, OAuth redirect 프로토콜 오류, 301 루프 등 실제 운영 이슈 대응 패턴을 정리했습니다.
+- k6 결과 해석 오차(반올림 착시)와 호스트 리소스 한계 문제를 운영 규칙으로 보완했습니다.
+
 ## 🧭 설계 의사결정 (Design Decisions)
 
 홈서버 환경에서 **보안**, **빌드 성능**, **배포 자동화**를 균형 있게 고려한 의사결정 과정

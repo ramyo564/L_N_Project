@@ -31,6 +31,50 @@ React 기반의 모노레포 아키텍처로 구성되어 있으며, 현재 웹 
 
 ![Vitest](https://img.shields.io/badge/Vitest-Unit%20Test-6e9f18?logo=vitest) ![Cypress](https://img.shields.io/badge/Cypress-E2E-17202c?logo=cypress) ![Storybook](https://img.shields.io/badge/Storybook-UI%20Docs-ff4785?logo=storybook)
 
+<a id="dashboard-learnmore-index"></a>
+## 🔗 Dashboard LearnMore Index
+
+포트폴리오 대시보드의 Frontend `Learn More` 버튼이 아래 앵커로 직접 연결됩니다.
+
+- **[Frontend Monorepo Architecture](#frontend-monorepo-architecture)**: apps/platform/core를 분리한 크로스플랫폼 구조
+- **[Frontend Auth & API Bridge](#frontend-api-bridge)**: Spring reauth + FastAPI token-manager 기반 API 브리지
+- **[Frontend Package Map](#frontend-package-map)**: `core` 중심 레이어 의존 방향과 패키지 맵
+- **[RTK Single Source](#frontend-rtk-single-source)**: RTK Query 캐시를 서버 상태 단일 진실 공급원으로 운영
+- **[DI Composition Flow](#frontend-di-composition)**: `CoreServicesProvider` 기반 서비스 조립과 훅 구성
+- **[Frontend Troubleshooting](#frontend-troubleshooting-patterns)**: 캐시 반영/타입 불일치/렌더 루프 등 실전 장애 대응 패턴
+
+## 📘 Dashboard 카드 상세 설명
+
+<a id="frontend-monorepo-architecture"></a>
+### Frontend Monorepo Architecture
+- `apps`, `platform`, `core`를 분리해 플랫폼별 UI와 공통 비즈니스 로직의 경계를 명확히 유지합니다.
+- 웹/모바일/데스크탑 확장 시 `core` 재사용을 전제로 의존 방향을 고정했습니다.
+
+<a id="frontend-api-bridge"></a>
+### Frontend Auth & API Bridge
+- Spring 계열 API는 `fetchBaseQuery + reauth` 전략으로 401 발생 시 refresh 후 재시도합니다.
+- FastAPI AI API는 codegen client와 token manager를 결합해 별도 인증 흐름으로 안정적으로 연결합니다.
+
+<a id="frontend-package-map"></a>
+### Frontend Package Map
+- `types -> utils -> domain -> api -> store -> hooks/services/usecases` 순으로 레이어를 구성했습니다.
+- ESLint 의존성 규칙으로 역방향 import를 차단해 순환참조와 구조 붕괴를 예방합니다.
+
+<a id="frontend-rtk-single-source"></a>
+### RTK Single Source
+- 서버 상태는 RTK Query 캐시를 단일 진실 공급원으로 사용하고, 컴포넌트 로컬 중복 상태를 줄였습니다.
+- mutation에서는 optimistic patch와 rollback을 표준화해 응답 지연 상황에서도 UI 일관성을 유지합니다.
+
+<a id="frontend-di-composition"></a>
+### DI Composition Flow
+- `CoreServicesProvider`에서 hook-factory, orchestration service, usecase를 단계적으로 조립합니다.
+- 기능 훅은 조립된 유스케이스만 의존하여 페이지 레벨 코드의 결합도를 낮춥니다.
+
+<a id="frontend-troubleshooting-patterns"></a>
+### Frontend Troubleshooting
+- 정렬/삭제/상태반영 누락은 transformResponse, id 정규화, optimistic rollback 규칙으로 해결했습니다.
+- 무한 렌더 이슈는 effect 의존성 최소화와 memoized callback 적용으로 재발을 방지했습니다.
+
 ## 🧭 문제 해결 과정에서의 기술 선택
 
 ### 1. 크로스 플랫폼 전략 (웹 우선 개발)

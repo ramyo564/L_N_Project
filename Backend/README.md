@@ -24,6 +24,111 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11-3776ab?logo=python) ![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi) ![Qdrant](https://img.shields.io/badge/Qdrant-VectorDB-ff6b6b) ![Sentence Transformers](https://img.shields.io/badge/Sentence--Transformers-ML-orange)
 
+<a id="dashboard-learnmore-index"></a>
+## 🔗 Dashboard LearnMore Index
+
+포트폴리오 대시보드의 Backend `Learn More` 버튼이 아래 앵커로 직접 연결됩니다.
+
+### Spring Stack
+- **[Spring Hexagonal](#backend-spring-hex)**: 도메인/애플리케이션/어댑터 분리 기반의 헥사고날 구조
+- **[Spring Auth Flow](#backend-spring-auth)**: JWT 발급, 리프레시, Redis 세션/블랙리스트 기반 인증 흐름
+- **[Spring Package Map](#backend-spring-packages)**: `auth`, `project`, `task_mvc`, `subtask_mvc`, `user` 도메인 패키지 맵
+- **[Spring Domain Rules](#backend-spring-domain-rules)**: 권한 검증, 삭제 불변성, 멱등성, 중복 재정렬 방지 규칙
+- **[Spring State Management](#backend-spring-state-management)**: Task/Project/SubTask 상태 전이 및 완료시각 규칙
+- **[Spring API Write Path](#backend-spring-api-write)**: API 202 응답, Redis 선반영, RabbitMQ 이벤트 발행 경로
+- **[Spring Worker Consume Path](#backend-spring-worker-consume)**: 배치 소비 후 PostgreSQL 반영 및 캐시 정리
+- **[Spring Troubleshooting](#backend-spring-troubleshooting)**: MVC 전환, Redis 경합 완화, RMQ 채널/배치 최적화
+
+### FastAPI Stack
+- **[FastAPI Analyze Path](#backend-fastapi-analyze)**: 토큰 검증, Redis 세션 상태, Qdrant 컨텍스트, LLM 추천 생성
+- **[FastAPI Auth Flow](#backend-fastapi-auth)**: Spring verify API 연동 기반 보호 엔드포인트 인증
+- **[FastAPI Package Map](#backend-fastapi-packages)**: router/dependencies/services/domain/interfaces/infrastructure 분리 구조
+- **[FastAPI Domain Rules](#backend-fastapi-domain-rules)**: 추천 파싱 정규화, 인덱스 범위/매핑 무결성 검증
+- **[FastAPI State Management](#backend-fastapi-state-management)**: 분석→추천→피드백→완료 세션 상태 관리
+- **[FastAPI Feedback Path](#backend-fastapi-feedback)**: 선택 추천 인덱스를 Spring task 생성 API로 전달
+- **[FastAPI Troubleshooting](#backend-fastapi-troubleshooting)**: 토큰/파싱/캐시/벡터 장애 대응 및 폴백 전략
+
+## 📘 Dashboard 카드 상세 설명
+
+### Spring Stack
+
+<a id="backend-spring-hex"></a>
+#### Spring Hexagonal
+- 각 도메인은 `domain -> application -> infrastructure` 방향으로 의존성을 제한합니다.
+- Controller/MQ 리스너는 `adapter in`, DB/MQ/Redis는 `adapter out`으로 분리하여 기술 교체 비용을 낮췄습니다.
+
+<a id="backend-spring-auth"></a>
+#### Spring Auth Flow
+- 로그인 시 Access/Refresh 토큰을 발급하고, Refresh 세션은 Redis에 저장합니다.
+- 요청마다 `JwtAuthenticationFilter`가 블랙리스트/유효성 검증을 수행해 SecurityContext를 구성합니다.
+
+<a id="backend-spring-packages"></a>
+#### Spring Package Map
+- 핵심 도메인(`auth`, `project`, `task_mvc`, `subtask_mvc`, `user`)을 독립 패키지로 분리했습니다.
+- `common` 패키지에서 security, cache, messaging, observability를 공통 모듈로 제공합니다.
+
+<a id="backend-spring-domain-rules"></a>
+#### Spring Domain Rules
+- 프로젝트 접근은 pending-cache 우선 확인 후 ownership DB 검증으로 최종 판정합니다.
+- 삭제 엔티티 상태 변경 차단, reorder 중복 ID 거부, delete 멱등 처리로 도메인 무결성을 보장합니다.
+
+<a id="backend-spring-state-management"></a>
+#### Spring State Management
+- Task/Project/SubTask 상태 전이를 엔티티 규칙으로 캡슐화하여 API 단의 분기 로직을 최소화했습니다.
+- 완료 상태 전환 시 `completedAt` 정책을 일관되게 적용하고, 삭제 상태에서는 전이를 차단합니다.
+
+<a id="backend-spring-api-write"></a>
+#### Spring API Write Path
+- 쓰기 API는 `202 Accepted`를 빠르게 반환하고 Redis pending/caching으로 사용자 체감 지연을 줄입니다.
+- 실제 영속화는 RabbitMQ 이벤트를 통해 Worker 경로에서 비동기로 처리합니다.
+
+<a id="backend-spring-worker-consume"></a>
+#### Spring Worker Consume Path
+- Worker는 큐 메시지를 배치 수신하여 CommandHandler로 분기 처리합니다.
+- PostgreSQL 반영 완료 후 `AFTER_COMMIT` 캐시 무효화 이벤트를 발행해 조회 일관성을 유지합니다.
+
+<a id="backend-spring-troubleshooting"></a>
+#### Spring Troubleshooting
+- MVC/WebFlux 혼재 경로를 정리하고, Redis 커넥션 프로파일(API/Worker)을 분리해 경합을 줄였습니다.
+- RabbitMQ 동시성, prefetch, 배치 소비 정책을 조정해 타임아웃/스파이크를 완화했습니다.
+
+### FastAPI Stack
+
+<a id="backend-fastapi-analyze"></a>
+#### FastAPI Analyze Path
+- `/api/v1/ai/analyze/failure`는 사용자 검증 후 분석 세션을 Redis에 생성합니다.
+- Qdrant 유사 사례 검색과 LLM 추천 생성 결과를 세션 스냅샷으로 저장해 다음 피드백 단계에 전달합니다.
+
+<a id="backend-fastapi-auth"></a>
+#### FastAPI Auth Flow
+- 보호 엔드포인트는 `get_current_user` 의존성에서 Bearer 토큰을 추출합니다.
+- Spring verify API 호출 결과를 스키마 검증한 뒤 사용자 컨텍스트로 매핑해 서비스 계층에 전달합니다.
+
+<a id="backend-fastapi-packages"></a>
+#### FastAPI Package Map
+- `api`, `core`, `services`, `domain`, `infrastructure`, `schemas`, `prompts`로 역할을 분리했습니다.
+- 서비스 계층은 도메인 인터페이스 중심으로 동작하고, 외부 연동은 인프라 계층으로 격리했습니다.
+
+<a id="backend-fastapi-domain-rules"></a>
+#### FastAPI Domain Rules
+- LLM 응답은 JSON 정규 파싱 실패 시 텍스트 기반 fallback 파서를 통해 복구합니다.
+- 피드백 처리 시 세션 존재 여부, 선택 인덱스 범위, recommendation 매핑 무결성을 검증합니다.
+
+<a id="backend-fastapi-state-management"></a>
+#### FastAPI State Management
+- 분석 요청에서 `analyzing` 상태를 만들고 추천 결과 반영 후 세션 스냅샷을 갱신합니다.
+- 피드백 완료 시 `completed` 상태와 선택 개수/메모를 저장해 후속 분석의 입력으로 활용합니다.
+
+<a id="backend-fastapi-feedback"></a>
+#### FastAPI Feedback Path
+- 사용자가 선택한 추천 인덱스를 Redis 세션 스냅샷과 대조해 실제 Task 생성 payload로 변환합니다.
+- 변환된 요청은 `SpringClient.create_tasks`를 통해 Spring API에 위임됩니다.
+
+<a id="backend-fastapi-troubleshooting"></a>
+#### FastAPI Troubleshooting
+- verify timeout, 세션 만료, 잘못된 선택 인덱스, 매핑 누락 등 주요 실패 케이스를 개별 분기로 처리합니다.
+- Qdrant/캐시/LLM 오류 시에도 안전한 기본 응답으로 degrade하여 전체 플로우 중단을 피합니다.
+
 ## 🏗️ 전체 아키텍처
 
 ```mermaid

@@ -932,6 +932,68 @@ document.addEventListener('DOMContentLoaded', async () => {
         `
     };
 
+    const learnMoreLinks = {
+        // Backend
+        'backend-spring-hex': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#backend-spring-hex',
+        'backend-spring-auth': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#backend-spring-auth',
+        'backend-spring-packages': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#backend-spring-packages',
+        'backend-spring-domain-rules': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#backend-spring-domain-rules',
+        'backend-spring-state-management': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#backend-spring-state-management',
+        'backend-spring-api-write': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#backend-spring-api-write',
+        'backend-spring-worker-consume': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#backend-spring-worker-consume',
+        'backend-spring-troubleshooting': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#backend-spring-troubleshooting',
+        'backend-fastapi-analyze': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#backend-fastapi-analyze',
+        'backend-fastapi-auth': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#backend-fastapi-auth',
+        'backend-fastapi-packages': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#backend-fastapi-packages',
+        'backend-fastapi-domain-rules': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#backend-fastapi-domain-rules',
+        'backend-fastapi-state-management': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#backend-fastapi-state-management',
+        'backend-fastapi-feedback': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#backend-fastapi-feedback',
+        'backend-fastapi-troubleshooting': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#backend-fastapi-troubleshooting',
+
+        // Frontend
+        'frontend-monorepo-architecture': 'https://github.com/ramyo564/L_N_Project/blob/main/Frontend/README.md#frontend-monorepo-architecture',
+        'frontend-api-bridge': 'https://github.com/ramyo564/L_N_Project/blob/main/Frontend/README.md#frontend-api-bridge',
+        'frontend-package-map': 'https://github.com/ramyo564/L_N_Project/blob/main/Frontend/README.md#frontend-package-map',
+        'frontend-rtk-single-source': 'https://github.com/ramyo564/L_N_Project/blob/main/Frontend/README.md#frontend-rtk-single-source',
+        'frontend-di-composition': 'https://github.com/ramyo564/L_N_Project/blob/main/Frontend/README.md#frontend-di-composition',
+        'frontend-troubleshooting-patterns': 'https://github.com/ramyo564/L_N_Project/blob/main/Frontend/README.md#frontend-troubleshooting-patterns',
+
+        // DevOps
+        'devops-ci-change-detection': 'https://github.com/ramyo564/L_N_Project/blob/main/Dev/README.md#devops-ci-change-detection',
+        'devops-ci-integration-gate': 'https://github.com/ramyo564/L_N_Project/blob/main/Dev/README.md#devops-ci-integration-gate',
+        'devops-cd-wireguard': 'https://github.com/ramyo564/L_N_Project/blob/main/Dev/README.md#devops-cd-wireguard',
+        'devops-image-promotion': 'https://github.com/ramyo564/L_N_Project/blob/main/Dev/README.md#devops-image-promotion',
+        'devops-compose-topology': 'https://github.com/ramyo564/L_N_Project/blob/main/Dev/README.md#devops-compose-topology',
+        'devops-docker-build-map': 'https://github.com/ramyo564/L_N_Project/blob/main/Dev/README.md#devops-docker-build-map',
+        'devops-nginx-runtime-validation': 'https://github.com/ramyo564/L_N_Project/blob/main/Dev/README.md#devops-nginx-runtime-validation',
+        'devops-edge-security': 'https://github.com/ramyo564/L_N_Project/blob/main/Dev/README.md#devops-edge-security',
+        'devops-observability-pipeline': 'https://github.com/ramyo564/L_N_Project/blob/main/Dev/README.md#devops-observability-pipeline',
+        'devops-k6-load-architecture': 'https://github.com/ramyo564/L_N_Project/blob/main/Dev/README.md#devops-k6-load-architecture',
+        'devops-stress-mode-lifecycle': 'https://github.com/ramyo564/L_N_Project/blob/main/Dev/README.md#devops-stress-mode-lifecycle',
+        'devops-troubleshooting-patterns': 'https://github.com/ramyo564/L_N_Project/blob/main/Dev/README.md#devops-troubleshooting-patterns'
+    };
+
+    function setupLearnMoreLinks() {
+        const cards = document.querySelectorAll('.service-card');
+        cards.forEach((card) => {
+            const mermaidId = card.querySelector('.mermaid')?.getAttribute('data-mermaid-id');
+            const link = card.querySelector('.card-link');
+            if (!mermaidId || !link) {
+                return;
+            }
+
+            const href = learnMoreLinks[mermaidId];
+            if (!href) {
+                link.setAttribute('href', '#');
+                return;
+            }
+
+            link.setAttribute('href', href);
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener noreferrer');
+        });
+    }
+
     // Initialize Mermaid Diagrams based on data-mermaid-id
     const mermaidContainer = document.querySelectorAll('.mermaid');
     mermaidContainer.forEach(container => {
@@ -1024,5 +1086,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         nodes: mermaidContainer
     });
 
+    setupLearnMoreLinks();
     setupMermaidModal();
 });
