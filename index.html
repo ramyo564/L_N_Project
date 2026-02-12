@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yohan | System Architect</title>
+    <meta name="description" content="System Architecture Dashboard Portfolio of Yohan">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script type="module" src="script.js"></script>
+</head>
+
+<body>
+    <!-- Top Status Bar -->
+    <header class="status-bar">
+        <div class="logo-area">
+            <div class="status-indicator online"></div>
+            <span class="system-name">YOHAN_SYSTEM_V.3.2</span>
+        </div>
+        <nav class="nav-links">
+            <a href="#projects" class="nav-item">MODULES</a>
+            <a href="#about" class="nav-item">KERNEL</a>
+            <a href="#contact" class="nav-item">SIGNAL</a>
+        </nav>
+        <div class="time-display">
+            UPTIME: <span id="uptime">Loading...</span>
+        </div>
+    </header>
+
+    <main class="dashboard-grid">
+
+        <!-- Hero: Core System Architecture Diagram -->
+        <section class="panel hero-panel">
+            <div class="panel-header">
+                <span class="panel-title">SYSTEM_ARCHITECTURE</span>
+                <span class="panel-uid">ID: LIFE-NAV-01</span>
+            </div>
+
+            <div class="graph-container">
+                <div class="mermaid" data-mermaid-id="architecture"></div>
+            </div>
+
+            <div class="hero-message">
+                <p>> System optimized. p95 Latency reduced by 86%.</p>
+                <p>> Docker image size reduced by 96% (26GB -> 1GB).</p>
+            </div>
+        </section>
+
+        <!-- Projects: Service Modules -->
+        <!-- Backend Services Section -->
+        <div class="section-header">
+            <h2 class="section-title">Backend Services</h2>
+        </div>
+        <section class="service-grid backend-service-grid">
+            <article class="service-card backend-card">
+                <div class="card-visual">
+                    <div class="mermaid" data-mermaid-id="backend-spring-hex"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Spring Hexagonal</h3>
+                    <p class="card-desc">Controller, Application, Domain, and Adapter layers are separated by ports to
+                        keep domain logic clean and replaceable.</p>
+                    <a href="#" class="card-link">LEARN MORE</a>
+                </div>
+            </article>
+
+            <article class="service-card backend-card">
+                <div class="card-visual">
+                    <div class="mermaid" data-mermaid-id="backend-spring-auth"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Spring Auth Flow</h3>
+                    <p class="card-desc">Login and refresh issue JWT tokens, refresh session cookies are stored in
+                        Redis, and JwtAuthenticationFilter validates bearer tokens per request.</p>
+                    <a href="#" class="card-link">LEARN MORE</a>
+                </div>
+            </article>
+
+            <article class="service-card backend-card">
+                <div class="card-visual">
+                    <div class="mermaid" data-mermaid-id="backend-spring-packages"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Spring Package Map</h3>
+                    <p class="card-desc">Domain modules (`auth`, `project`, `task_mvc`, `subtask_mvc`, `user`) share a
+                        common platform package for security, cache, messaging, and observability.</p>
+                    <a href="#" class="card-link">LEARN MORE</a>
+                </div>
+            </article>
+
+            <article class="service-card backend-card">
+                <div class="card-visual">
+                    <div class="mermaid" data-mermaid-id="backend-spring-domain-rules"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Spring Domain Rules</h3>
+                    <p class="card-desc">Project ownership is verified through pending-cache-first access checks, then
+                        domain guards enforce delete-state immutability, duplicate reorder prevention, and idempotent
+                        delete behavior.</p>
+                    <a href="#" class="card-link">LEARN MORE</a>
+                </div>
+            </article>
+
+            <article class="service-card backend-card">
+                <div class="card-visual">
+                    <div class="mermaid" data-mermaid-id="backend-spring-state-management"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Spring State Management</h3>
+                    <p class="card-desc">Task, Project, and SubTask transitions are controlled in domain models with
+                        explicit completion timestamp rules and deleted-entity transition blocking.</p>
+                    <a href="#" class="card-link">LEARN MORE</a>
+                </div>
+            </article>
+
+            <article class="service-card backend-card">
+                <div class="card-visual">
+                    <div class="mermaid" data-mermaid-id="backend-spring-api-write"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Spring API Write Path</h3>
+                    <p class="card-desc">TaskController returns 202 quickly, writes optimistic Redis cache, and
+                        publishes task events to RabbitMQ.</p>
+                    <a href="#" class="card-link">LEARN MORE</a>
+                </div>
+            </article>
+
+            <article class="service-card backend-card">
+                <div class="card-visual">
+                    <div class="mermaid" data-mermaid-id="backend-spring-worker-consume"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Spring Worker Consume Path</h3>
+                    <p class="card-desc">TaskEventListener batch-consumes queue messages, executes command handlers,
+                        persists to PostgreSQL, and triggers cache eviction events.</p>
+                    <a href="#" class="card-link">LEARN MORE</a>
+                </div>
+            </article>
+
+            <article class="service-card backend-card">
+                <div class="card-visual">
+                    <div class="mermaid" data-mermaid-id="backend-fastapi-analyze"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">FastAPI Analyze Path</h3>
+                    <p class="card-desc">Failure analysis verifies JWT via Spring, stores AI session state in Redis,
+                        queries Qdrant context, and generates recommendations with LLM.</p>
+                    <a href="#" class="card-link">LEARN MORE</a>
+                </div>
+            </article>
+
+            <article class="service-card backend-card">
+                <div class="card-visual">
+                    <div class="mermaid" data-mermaid-id="backend-fastapi-auth"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">FastAPI Auth Flow</h3>
+                    <p class="card-desc">All protected AI endpoints validate bearer tokens by calling Spring verify API
+                        through shared httpx client and map verified user context for services.</p>
+                    <a href="#" class="card-link">LEARN MORE</a>
+                </div>
+            </article>
+
+            <article class="service-card backend-card">
+                <div class="card-visual">
+                    <div class="mermaid" data-mermaid-id="backend-fastapi-packages"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">FastAPI Package Map</h3>
+                    <p class="card-desc">API router, dependency graph, services, domain interfaces, and infrastructure
+                        clients are split for testability and runtime flexibility.</p>
+                    <a href="#" class="card-link">LEARN MORE</a>
+                </div>
+            </article>
+
+            <article class="service-card backend-card">
+                <div class="card-visual">
+                    <div class="mermaid" data-mermaid-id="backend-fastapi-domain-rules"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">FastAPI Domain Rules</h3>
+                    <p class="card-desc">Recommendations are normalized with JSON parsing and fallback rules, while
+                        feedback submission enforces session validity, index bounds, and recommendation mapping
+                        integrity.</p>
+                    <a href="#" class="card-link">LEARN MORE</a>
+                </div>
+            </article>
+
+            <article class="service-card backend-card">
+                <div class="card-visual">
+                    <div class="mermaid" data-mermaid-id="backend-fastapi-state-management"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">FastAPI State Management</h3>
+                    <p class="card-desc">AI session lifecycle is persisted in Redis from analyzing to completed state,
+                        with category/recommendation snapshots and feedback metadata updates after task creation.</p>
+                    <a href="#" class="card-link">LEARN MORE</a>
+                </div>
+            </article>
+
+            <article class="service-card backend-card">
+                <div class="card-visual">
+                    <div class="mermaid" data-mermaid-id="backend-fastapi-feedback"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">FastAPI Feedback Path</h3>
+                    <p class="card-desc">Selected recommendation indexes are resolved from Redis session snapshot and
+                        sent to Spring task API through SpringClient.create_tasks.</p>
+                    <a href="#" class="card-link">LEARN MORE</a>
+                </div>
+            </article>
+        </section>
+
+        <!-- Frontend Services Section -->
+        <div class="section-header">
+            <h2 class="section-title">Frontend Services</h2>
+        </div>
+        <section class="service-grid">
+            <article class="service-card">
+                <div class="card-visual">
+                    <div class="mermaid" data-mermaid-id="frontend-arch"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">React Architecture</h3>
+                    <p class="card-desc">Component-driven development with optimistic UI updates. Zero-latency user
+                        experience.</p>
+                    <a href="#" class="card-link">LEARN MORE</a>
+                </div>
+            </article>
+        </section>
+
+        <!-- DevOps Services Section -->
+        <div class="section-header">
+            <h2 class="section-title">DevOps & Infra</h2>
+        </div>
+        <section class="service-grid">
+            <article class="service-card">
+                <div class="card-visual">
+                    <div class="mermaid" data-mermaid-id="devops-ci"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">CI Pipeline</h3>
+                    <p class="card-desc">GitHub Actions workflow for automated testing and Docker image building.</p>
+                    <a href="#" class="card-link">LEARN MORE</a>
+                </div>
+            </article>
+
+            <article class="service-card">
+                <div class="card-visual">
+                    <div class="mermaid" data-mermaid-id="devops-deploy"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">CD & Deployment</h3>
+                    <p class="card-desc">Secure deployment via Cloudflare Tunnel and WireGuard VPN networking.</p>
+                    <a href="#" class="card-link">LEARN MORE</a>
+                </div>
+            </article>
+        </section>
+
+        <!-- Skills: Resource Monitoring -->
+        <section id="about" class="panel skills-panel">
+            <div class="panel-header">
+                <span class="panel-title">RESOURCE_USAGE</span>
+                <span class="panel-uid">ID: SKILL-SET</span>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-label">Java/Spring</span>
+                    <div class="stat-bar">
+                        <div class="fill" style="width: 90%"></div>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">React/TS</span>
+                    <div class="stat-bar">
+                        <div class="fill" style="width: 85%"></div>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Docker/Ops</span>
+                    <div class="stat-bar">
+                        <div class="fill" style="width: 80%"></div>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">System Arch</span>
+                    <div class="stat-bar">
+                        <div class="fill" style="width: 85%"></div>
+                    </div>
+                </div>
+                <div class="stat-terminal">
+                    <p>> User.Bio: Full-stack Engineer</p>
+                    <p>> Achievement: Reduced build time by 90%</p>
+                    <p>> Efficiency: High.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact: Comms -->
+        <section id="contact" class="panel contact-panel">
+            <div class="panel-header">
+                <span class="panel-title">ESTABLISH_UPLINK</span>
+                <span class="panel-uid">ID: COMMS-01</span>
+            </div>
+            <div class="contact-content">
+                <p>Submit transmission to initiate collaboration.</p>
+                <div class="contact-actions">
+                    <a href="mailto:contact@example.com" class="action-btn">
+                        <span class="icon">✉</span> SEND_EMAIL
+                    </a>
+                    <a href="#" class="action-btn">
+                        <span class="icon">⚡</span> GITHUB_LINK
+                    </a>
+                    <a href="#" class="action-btn">
+                        <span class="icon">💼</span> LINKEDIN
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="mermaid-modal" class="mermaid-modal" aria-hidden="true">
+        <div class="mermaid-modal-backdrop" data-mermaid-close></div>
+        <div class="mermaid-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="mermaid-modal-title">
+            <button type="button" class="mermaid-modal-close" data-mermaid-close aria-label="Close expanded diagram">
+                CLOSE
+            </button>
+            <div class="mermaid-modal-header">
+                <span id="mermaid-modal-title">Expanded Diagram</span>
+            </div>
+            <div id="mermaid-modal-content" class="mermaid-modal-content"></div>
+        </div>
+    </div>
+
+    <div class="grid-overlay"></div>
+</body>
+
+</html>

@@ -1,0 +1,666 @@
+/* Modern System Dashboard Theme */
+:root {
+    --bg-color: #0d1117;
+    /* GitHub Dark Dimmed style */
+    --panel-bg: #161b22;
+    --border-color: #30363d;
+    --text-primary: #c9d1d9;
+    --text-secondary: #8b949e;
+
+    --accent-blue: #58a6ff;
+    --accent-green: #238636;
+    --accent-orange: #d29922;
+    --accent-glow: rgba(88, 166, 255, 0.15);
+
+    --font-ui: 'Inter', sans-serif;
+    --font-code: 'JetBrains Mono', monospace;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    height: 100vh;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+body.modal-open {
+    overflow: hidden;
+}
+
+/* Background Grid Overlay */
+.grid-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        linear-gradient(var(--border-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+    background-size: 50px 50px;
+    opacity: 0.05;
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Status Bar */
+.status-bar {
+    height: 50px;
+    background: var(--panel-bg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 1.5rem;
+    font-family: var(--font-code);
+    font-size: 0.85rem;
+    z-index: 100;
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    box-shadow: 0 0 8px var(--accent-green);
+}
+
+.system-name {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.nav-links {
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-item {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.nav-item:hover {
+    color: var(--accent-blue);
+}
+
+.time-display {
+    color: var(--text-secondary);
+}
+
+/* Dashboard Layout */
+.dashboard-grid {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1.5rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    font-family: var(--font-code);
+    font-size: 0.8rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.8rem;
+}
+
+.panel-title {
+    font-weight: 700;
+    color: var(--accent-blue);
+}
+
+.panel-uid {
+    color: var(--text-secondary);
+}
+
+/* Hero Graph Panel */
+.hero-panel {
+    min-height: 0;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 1rem;
+}
+
+.hero-panel .panel-header {
+    margin-bottom: 0.75rem;
+}
+
+.hero-message {
+    position: static;
+    width: 100%;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.18);
+    font-family: var(--font-code);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.graph-container {
+    position: relative;
+    width: 100%;
+    height: clamp(360px, 48vw, 560px);
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.graph-container>.legacy-node {
+    position: absolute;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    border-radius: 4px;
+    text-align: center;
+    z-index: 10;
+    transition: all 0.3s;
+    cursor: default;
+    pointer-events: auto;
+}
+
+.graph-container>.legacy-node:hover {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 15px var(--accent-glow);
+    transform: translateY(-2px);
+}
+
+.graph-container>.legacy-node.core-node {
+    width: 160px;
+    border-color: var(--accent-blue);
+}
+
+.graph-container>.legacy-node .node-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.graph-container>.legacy-node .node-label {
+    font-family: var(--font-code);
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+}
+
+.graph-container>.legacy-node .node-status {
+    font-size: 0.7rem;
+    color: var(--accent-green);
+}
+
+.graph-container>.legacy-node .node-detail {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* Node Positioning */
+.graph-container>.legacy-node.sat-node {
+    width: 120px;
+}
+
+.graph-container>.legacy-node.sat-node.front {
+    left: 10%;
+    top: 20%;
+}
+
+.graph-container>.legacy-node.sat-node.back {
+    right: 10%;
+    top: 20%;
+}
+
+.graph-container>.legacy-node.sat-node.ops {
+    bottom: 10%;
+}
+
+/* Connector Lines - Simplified via CSS Borders/Pseudo */
+.graph-container>.connector-line {
+    position: absolute;
+    background: var(--border-color);
+    z-index: 1;
+}
+
+.graph-container>.horizontal-left {
+    height: 1px;
+    width: 25%;
+    left: 20%;
+    top: 40%;
+    transform: rotate(-15deg);
+}
+
+.graph-container>.horizontal-right {
+    height: 1px;
+    width: 25%;
+    right: 20%;
+    top: 40%;
+    transform: rotate(15deg);
+}
+
+.graph-container>.vertical-bottom {
+    width: 1px;
+    height: 60px;
+    bottom: 30%;
+}
+
+/* Section Headers */
+
+/* Service Grid Layout (3 Columns) */
+.service-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.backend-service-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Enhanced Service Card */
+.service-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.service-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent-blue);
+}
+
+/* Card Visual (Top - Mermaid) */
+.card-visual {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1rem;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.card-visual .mermaid {
+    width: 100%;
+    height: 100%;
+}
+
+.backend-card .card-visual {
+    height: 290px;
+}
+
+/* Card Content (Bottom - Text) */
+.card-content {
+    padding: 1.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.card-desc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+    flex-grow: 1;
+}
+
+.card-link {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: rgba(88, 166, 255, 0.1);
+    border: 1px solid var(--accent-blue);
+    color: var(--accent-blue);
+    text-decoration: none;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    align-self: flex-start;
+    transition: all 0.2s;
+}
+
+.card-link:hover {
+    background: var(--accent-blue);
+    color: #fff;
+}
+
+.section-header {
+    margin-bottom: 1.5rem;
+}
+
+.section-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: var(--font-code);
+    letter-spacing: 1px;
+}
+
+/* Legacy styles removed */
+
+
+.stats-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-family: var(--font-code);
+    font-size: 0.8rem;
+}
+
+.stat-label {
+    width: 100px;
+    color: var(--text-secondary);
+}
+
+.stat-bar {
+    flex-grow: 1;
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.stat-bar .fill {
+    height: 100%;
+    background: var(--accent-blue);
+}
+
+.stat-terminal {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    font-family: var(--font-code);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* Contact Panel */
+.contact-panel {
+    background: transparent;
+    border: 1px dashed var(--border-color);
+    align-items: center;
+    text-align: center;
+}
+
+.contact-content p {
+    margin-bottom: 2rem;
+    color: var(--text-secondary);
+}
+
+.contact-actions {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1.5rem;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    text-decoration: none;
+    font-family: var(--font-code);
+    font-size: 0.85rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .service-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-grid {
+        padding: 1rem;
+        gap: 2rem;
+    }
+
+    .service-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .nav-links {
+        display: none;
+    }
+
+    .graph-container {
+        height: 340px;
+    }
+
+    .hero-panel {
+        min-height: 0;
+    }
+
+    .section-title {
+        font-size: 1.4rem;
+    }
+
+    .card-visual {
+        height: 150px;
+    }
+
+    .backend-card .card-visual {
+        height: 220px;
+    }
+
+    .status-bar {
+        padding: 0 1rem;
+    }
+
+    .contact-actions {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+
+/* Mermaid Diagram Styles */
+.mermaid {
+    background: transparent;
+    font-family: var(--font-code);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Force SVG to scale */
+.mermaid svg {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    transform-origin: center center;
+    transition: transform 0.25s ease;
+}
+
+.graph-container:hover .mermaid svg,
+.card-visual:hover .mermaid svg {
+    transform: scale(1.06);
+}
+
+.mermaid-zoom-target {
+    cursor: zoom-in;
+}
+
+.mermaid-zoom-target:focus-visible {
+    outline: 1px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+.mermaid-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 1200;
+}
+
+.mermaid-modal.is-open {
+    display: flex;
+}
+
+.mermaid-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 8, 12, 0.82);
+    backdrop-filter: blur(2px);
+}
+
+.mermaid-modal-dialog {
+    position: relative;
+    z-index: 1;
+    width: min(1400px, 96vw);
+    height: min(88vh, 980px);
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.mermaid-modal-close {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.7rem;
+    padding: 0.25rem 0.55rem;
+    border: 1px solid var(--border-color);
+    background: rgba(0, 0, 0, 0.22);
+    color: var(--text-secondary);
+    font-family: var(--font-code);
+    font-size: 0.72rem;
+    cursor: pointer;
+}
+
+.mermaid-modal-close:hover {
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+.mermaid-modal-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    font-family: var(--font-code);
+    font-size: 0.82rem;
+    color: var(--accent-blue);
+}
+
+.mermaid-modal-content {
+    flex: 1;
+    overflow: auto;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.18);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.mermaid-modal-content svg {
+    display: block;
+    max-width: none;
+    height: auto;
+    min-width: 760px;
+}
+
+@media (max-width: 768px) {
+    .mermaid-modal {
+        padding: 0.45rem;
+    }
+
+    .mermaid-modal-dialog {
+        width: 100%;
+        height: 92vh;
+    }
+
+    .mermaid-modal-content {
+        padding: 0.75rem;
+    }
+
+    .mermaid-modal-content svg {
+        min-width: 480px;
+    }
+}
+
+/* Adjustments for Hero Diagram */
+.hero-panel .mermaid {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+}
+
+/* Adjustments for Service Card Diagrams */
+.card-visual .mermaid {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
