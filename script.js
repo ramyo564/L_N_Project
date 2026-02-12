@@ -34,6 +34,62 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Node Hover Effects removed as we use Mermaid now
 
+    function setupMobileNav() {
+        const nav = document.getElementById('header-nav');
+        const toggle = document.querySelector('.nav-toggle');
+
+        if (!nav || !toggle) {
+            return;
+        }
+
+        const closeNav = () => {
+            nav.classList.remove('is-open');
+            toggle.classList.remove('is-open');
+            toggle.setAttribute('aria-expanded', 'false');
+        };
+
+        const openNav = () => {
+            nav.classList.add('is-open');
+            toggle.classList.add('is-open');
+            toggle.setAttribute('aria-expanded', 'true');
+        };
+
+        toggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (nav.classList.contains('is-open')) {
+                closeNav();
+            } else {
+                openNav();
+            }
+        });
+
+        nav.querySelectorAll('.nav-item').forEach((item) => {
+            item.addEventListener('click', closeNav);
+        });
+
+        document.addEventListener('click', (event) => {
+            const target = event.target;
+            if (!(target instanceof Node)) {
+                return;
+            }
+            if (!nav.contains(target) && !toggle.contains(target)) {
+                closeNav();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeNav();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                closeNav();
+            }
+        });
+    }
+
 
     // Mermaid Diagram Definitions
     const diagrams = {
@@ -1086,6 +1142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         nodes: mermaidContainer
     });
 
+    setupMobileNav();
     setupLearnMoreLinks();
     setupMermaidModal();
 });

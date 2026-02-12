@@ -22,7 +22,7 @@
             <div class="status-indicator online"></div>
             <span class="system-name">YOHAN_SYSTEM_V.3.2</span>
         </div>
-        <nav class="nav-links">
+        <nav id="header-nav" class="nav-links" aria-label="Primary navigation">
             <a href="#system-architecture" class="nav-item">SYSTEM_ARCHITECTURE</a>
             <a href="#backend-services" class="nav-item">BACKEND_SERVICES</a>
             <a href="#frontend-services" class="nav-item">FRONTEND_SERVICES</a>
@@ -30,6 +30,12 @@
             <a href="#skill-set" class="nav-item">SKILL_SET</a>
             <a href="#contact" class="nav-item">CONTACT</a>
         </nav>
+        <button class="nav-toggle" type="button" aria-label="Toggle navigation" aria-controls="header-nav"
+            aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
         <div class="time-display">
             UPTIME: <span id="uptime">Loading...</span>
         </div>
