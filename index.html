@@ -55,48 +55,42 @@
             </div>
 
             <div class="hero-message">
-                <p>> System optimized. p95 Latency reduced by 86%.</p>
-                <p>> Docker image size reduced by 96% (26GB -> 1GB).</p>
+                <p>> READ p95: 975ms -> 141ms (-86%) @500VU</p>
+                <p>> WRITE p95: 1.9s -> 126ms (-93%) @500VU</p>
+                <p>> READ/WRITE RPS: 972 -> 3,680 (+279%), 373 -> 916 (+146%)</p>
+                <p>> FASTAPI IMG/BUILD: 26GB -> 1GB (-96%), 1004s -> 98s (-90%)</p>
+                <p>> FRONTEND BUILD/SETUP: 4m10s -> 45s (-82%), 30m -> 2m (-95%)</p>
             </div>
         </section>
 
-        <!-- Skills: Resource Monitoring -->
+        <!-- Skills: Core Stack -->
         <section id="skill-set" class="panel skills-panel">
             <div class="panel-header">
                 <span class="panel-title">SKILL_SET</span>
                 <span class="panel-uid">ID: SKILL-SET</span>
             </div>
 
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <span class="stat-label">Java/Spring</span>
-                    <div class="stat-bar">
-                        <div class="fill" style="width: 90%"></div>
-                    </div>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">React/TS</span>
-                    <div class="stat-bar">
-                        <div class="fill" style="width: 85%"></div>
-                    </div>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Docker/Ops</span>
-                    <div class="stat-bar">
-                        <div class="fill" style="width: 80%"></div>
-                    </div>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">System Arch</span>
-                    <div class="stat-bar">
-                        <div class="fill" style="width: 85%"></div>
-                    </div>
-                </div>
-                <div class="stat-terminal">
-                    <p>> User.Bio: Full-stack Engineer</p>
-                    <p>> Achievement: Reduced build time by 90%</p>
-                    <p>> Efficiency: High.</p>
-                </div>
+            <div class="skill-grid">
+                <article class="skill-card">
+                    <h3 class="skill-card-title">BACKEND</h3>
+                    <p class="skill-card-stack">Java 21, Spring Boot 3, Python 3.11, FastAPI</p>
+                </article>
+                <article class="skill-card">
+                    <h3 class="skill-card-title">DATA</h3>
+                    <p class="skill-card-stack">PostgreSQL 15, Redis, RabbitMQ, Qdrant</p>
+                </article>
+                <article class="skill-card">
+                    <h3 class="skill-card-title">FRONTEND</h3>
+                    <p class="skill-card-stack">React 19, TypeScript 5, RTK Query, Turborepo</p>
+                </article>
+                <article class="skill-card">
+                    <h3 class="skill-card-title">DEVOPS</h3>
+                    <p class="skill-card-stack">Docker Compose, GitHub Actions, WireGuard, Cloudflare, Nginx</p>
+                </article>
+                <article class="skill-card">
+                    <h3 class="skill-card-title">OBSERVABILITY</h3>
+                    <p class="skill-card-stack">Prometheus, Grafana, Loki, Alertmanager, k6</p>
+                </article>
             </div>
         </section>
 

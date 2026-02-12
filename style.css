@@ -205,6 +205,10 @@ body.modal-open {
     line-height: 1.6;
 }
 
+.hero-message p+p {
+    margin-top: 0.25rem;
+}
+
 .graph-container {
     position: relative;
     width: 100%;
@@ -500,6 +504,34 @@ body.modal-open {
 
 /* Legacy styles removed */
 
+.skill-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.9rem;
+}
+
+.skill-card {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.9rem;
+    min-height: 110px;
+}
+
+.skill-card-title {
+    font-family: var(--font-code);
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    color: var(--accent-blue);
+    margin-bottom: 0.55rem;
+}
+
+.skill-card-stack {
+    font-size: 0.86rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
 
 .stats-grid {
     display: flex;
@@ -587,6 +619,10 @@ body.modal-open {
     .service-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+
+    .skill-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 768px) {
@@ -596,6 +632,10 @@ body.modal-open {
     }
 
     .service-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .skill-grid {
         grid-template-columns: 1fr;
     }
 
