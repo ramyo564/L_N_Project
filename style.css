@@ -151,6 +151,12 @@ body.modal-open {
     gap: 3rem;
 }
 
+.top-panels {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+}
+
 .panel {
     background: var(--panel-bg);
     border: 1px solid var(--border-color);

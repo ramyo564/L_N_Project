@@ -151,12 +151,15 @@ function renderHero() {
         return;
     }
     metrics.replaceChildren();
+    renderMetricLines(metrics, hero.metrics, '> Add metrics in templateConfig.hero.metrics');
+}
 
-    const metricLines = Array.isArray(hero.metrics) ? hero.metrics : [];
+function renderMetricLines(container, lines, fallbackText) {
+    const metricLines = Array.isArray(lines) ? lines : [];
     if (metricLines.length === 0) {
         const fallback = document.createElement('p');
-        fallback.textContent = '> Add metrics in templateConfig.hero.metrics';
-        metrics.appendChild(fallback);
+        fallback.textContent = fallbackText;
+        container.appendChild(fallback);
         return;
     }
 
@@ -164,7 +167,53 @@ function renderHero() {
         const item = document.createElement('p');
         const cleanLine = String(line).replace(/^>\s*/, '');
         item.textContent = `> ${cleanLine}`;
-        metrics.appendChild(item);
+        container.appendChild(item);
+    });
+}
+
+function createTopPanel(panel, index) {
+    const section = document.createElement('section');
+    section.className = `panel hero-panel ${panel.panelClass ?? ''}`.trim();
+    section.id = panel.sectionId || `top-panel-${index + 1}`;
+
+    const header = document.createElement('div');
+    header.className = 'panel-header';
+
+    const title = document.createElement('span');
+    title.className = 'panel-title';
+    title.textContent = panel.panelTitle || `TOP_PANEL_${index + 1}`;
+
+    const uid = document.createElement('span');
+    uid.className = 'panel-uid';
+    uid.textContent = panel.panelUid || `ID: TOP-${String(index + 1).padStart(2, '0')}`;
+
+    header.append(title, uid);
+
+    const graphContainer = document.createElement('div');
+    graphContainer.className = 'graph-container';
+    const mermaidContainer = document.createElement('div');
+    mermaidContainer.className = 'mermaid';
+    mermaidContainer.setAttribute('data-mermaid-id', panel.diagramId || '');
+    graphContainer.appendChild(mermaidContainer);
+
+    const metrics = document.createElement('div');
+    metrics.className = 'hero-message';
+    renderMetricLines(metrics, panel.metrics, '> Add metrics in templateConfig.topPanels');
+
+    section.append(header, graphContainer, metrics);
+    return section;
+}
+
+function renderTopPanels() {
+    const container = byId('top-panels');
+    if (!container) {
+        return;
+    }
+    container.replaceChildren();
+
+    const panels = Array.isArray(templateConfig.topPanels) ? templateConfig.topPanels : [];
+    panels.forEach((panel, index) => {
+        container.appendChild(createTopPanel(panel, index));
     });
 }
 
@@ -352,6 +401,14 @@ function buildDefaultNavigation() {
         target: normalizeHashTarget(hero.sectionId || 'system-architecture')
     });
 
+    const topPanels = Array.isArray(templateConfig.topPanels) ? templateConfig.topPanels : [];
+    topPanels.forEach((panel, index) => {
+        items.push({
+            label: panel.navLabel || panel.panelTitle || `TOP_PANEL_${index + 1}`,
+            target: normalizeHashTarget(panel.sectionId || `top-panel-${index + 1}`)
+        });
+    });
+
     items.push({
         label: skills.panelTitle || 'SKILL_SET',
         target: normalizeHashTarget(skills.sectionId || 'skill-set')
@@ -495,6 +552,7 @@ function setupMermaidModal() {
 document.addEventListener('DOMContentLoaded', async () => {
     setSystemInfo();
     renderHero();
+    renderTopPanels();
     renderSkills();
     renderServiceSections();
     renderContact();
