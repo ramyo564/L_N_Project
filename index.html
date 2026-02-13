@@ -16,553 +16,60 @@
 </head>
 
 <body>
-    <!-- Top Status Bar -->
+    <div class="grid-overlay" aria-hidden="true"></div>
+
     <header class="status-bar">
         <div class="logo-area">
             <div class="status-indicator online"></div>
-            <span class="system-name">YOHAN_SYSTEM_V.3.2</span>
+            <span id="system-name" class="system-name">YOHAN_SYSTEM_V.3.2</span>
         </div>
-        <nav id="header-nav" class="nav-links" aria-label="Primary navigation">
-            <a href="#system-architecture" class="nav-item">SYSTEM_ARCHITECTURE</a>
-            <a href="#skill-set" class="nav-item">SKILL_SET</a>
-            <a href="#backend-services" class="nav-item">BACKEND_SERVICES</a>
-            <a href="#frontend-services" class="nav-item">FRONTEND_SERVICES</a>
-            <a href="#devops-services" class="nav-item">DEVOPS_SERVICES</a>
-            <a href="#contact" class="nav-item">CONTACT</a>
-        </nav>
+
+        <nav id="header-nav" class="nav-links" aria-label="Primary navigation"></nav>
+
         <button class="nav-toggle" type="button" aria-label="Toggle navigation" aria-controls="header-nav"
             aria-expanded="false">
             <span></span>
             <span></span>
             <span></span>
         </button>
+
         <div class="time-display">
-            UPTIME: <span id="uptime">Loading...</span>
+            UPTIME: <span id="uptime">00:00:00</span>
         </div>
     </header>
 
     <main class="dashboard-grid">
-
-        <!-- Hero: Core System Architecture Diagram -->
         <section id="system-architecture" class="panel hero-panel">
             <div class="panel-header">
-                <span class="panel-title">SYSTEM_ARCHITECTURE</span>
-                <span class="panel-uid">ID: LIFE-NAV-01</span>
+                <span id="hero-panel-title" class="panel-title">SYSTEM_ARCHITECTURE</span>
+                <span id="hero-panel-uid" class="panel-uid">ID: LIFE-NAV-01</span>
             </div>
 
             <div class="graph-container">
-                <div class="mermaid" data-mermaid-id="architecture"></div>
+                <div id="hero-mermaid" class="mermaid" data-mermaid-id="architecture"></div>
             </div>
 
-            <div class="hero-message">
-                <p>> READ p95: 975ms -> 141ms (-86%) @500VU</p>
-                <p>> WRITE p95: 1.9s -> 126ms (-93%) @500VU</p>
-                <p>> READ/WRITE RPS: 972 -> 3,680 (+279%), 373 -> 916 (+146%)</p>
-                <p>> FASTAPI IMG/BUILD: 26GB -> 1GB (-96%), 1004s -> 98s (-90%)</p>
-                <p>> FRONTEND BUILD/SETUP: 4m10s -> 45s (-82%), 30m -> 2m (-95%)</p>
-            </div>
+            <div id="hero-metrics" class="hero-message"></div>
         </section>
 
-        <!-- Skills: Core Stack -->
         <section id="skill-set" class="panel skills-panel">
             <div class="panel-header">
-                <span class="panel-title">SKILL_SET</span>
-                <span class="panel-uid">ID: SKILL-SET</span>
+                <span id="skills-panel-title" class="panel-title">SKILL_SET</span>
+                <span id="skills-panel-uid" class="panel-uid">ID: SKILL-SET</span>
             </div>
-
-            <div class="skill-grid">
-                <article class="skill-card">
-                    <h3 class="skill-card-title">BACKEND</h3>
-                    <p class="skill-card-stack">Java 21, Spring Boot 3, Python 3.11, FastAPI</p>
-                </article>
-                <article class="skill-card">
-                    <h3 class="skill-card-title">DATA</h3>
-                    <p class="skill-card-stack">PostgreSQL 15, Redis, RabbitMQ, Qdrant</p>
-                </article>
-                <article class="skill-card">
-                    <h3 class="skill-card-title">FRONTEND</h3>
-                    <p class="skill-card-stack">React 19, TypeScript 5, RTK Query, Turborepo</p>
-                </article>
-                <article class="skill-card">
-                    <h3 class="skill-card-title">DEVOPS</h3>
-                    <p class="skill-card-stack">Docker Compose, GitHub Actions, WireGuard, Cloudflare, Nginx</p>
-                </article>
-                <article class="skill-card">
-                    <h3 class="skill-card-title">OBSERVABILITY</h3>
-                    <p class="skill-card-stack">Prometheus, Grafana, Loki, Alertmanager, k6</p>
-                </article>
-            </div>
+            <div id="skill-grid" class="skill-grid"></div>
         </section>
 
-        <!-- Projects: Service Modules -->
-        <!-- Backend Services Section -->
-        <div id="backend-services" class="section-header">
-            <h2 class="section-title">BACKEND_SERVICES</h2>
-        </div>
-        <section class="service-grid backend-service-grid">
-            <div class="backend-group-divider">
-                <span class="backend-group-title">SPRING STACK</span>
-                <span class="backend-group-desc">Architecture / Auth / Package / Domain / State / Write-Worker /
-                    Troubleshooting</span>
-            </div>
+        <div id="service-sections"></div>
 
-            <article class="service-card backend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="backend-spring-hex"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Spring Hexagonal</h3>
-                    <p class="card-desc">Controller, Application, Domain, and Adapter layers are separated by ports to
-                        keep domain logic clean and replaceable.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card backend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="backend-spring-auth"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Spring Auth Flow</h3>
-                    <p class="card-desc">Login and refresh issue JWT tokens, refresh session cookies are stored in
-                        Redis, and JwtAuthenticationFilter validates bearer tokens per request.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card backend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="backend-spring-packages"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Spring Package Map</h3>
-                    <p class="card-desc">Domain modules (`auth`, `project`, `task_mvc`, `subtask_mvc`, `user`) share a
-                        common platform package for security, cache, messaging, and observability.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card backend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="backend-spring-domain-rules"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Spring Domain Rules</h3>
-                    <p class="card-desc">Project ownership is verified through pending-cache-first access checks, then
-                        domain guards enforce delete-state immutability, duplicate reorder prevention, and idempotent
-                        delete behavior.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card backend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="backend-spring-state-management"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Spring State Management</h3>
-                    <p class="card-desc">Task, Project, and SubTask transitions are controlled in domain models with
-                        explicit completion timestamp rules and deleted-entity transition blocking.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card backend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="backend-spring-api-write"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Spring API Write Path</h3>
-                    <p class="card-desc">TaskController returns 202 quickly, writes optimistic Redis cache, and
-                        publishes task events to RabbitMQ.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card backend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="backend-spring-worker-consume"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Spring Worker Consume Path</h3>
-                    <p class="card-desc">TaskEventListener batch-consumes queue messages, executes command handlers,
-                        persists to PostgreSQL, and triggers cache eviction events.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card backend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="backend-spring-troubleshooting"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Spring Troubleshooting</h3>
-                    <p class="card-desc">Resolved major bottlenecks including MVC+WebFlux context overhead, Redis
-                        connection contention, race conditions after async writes, and RabbitMQ channel conflicts
-                        through staged architecture tuning.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <div class="backend-group-divider">
-                <span class="backend-group-title">FASTAPI STACK</span>
-                <span class="backend-group-desc">Analyze / Auth / Package / Domain / State / Feedback /
-                    Troubleshooting</span>
-            </div>
-
-            <article class="service-card backend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="backend-fastapi-analyze"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">FastAPI Analyze Path</h3>
-                    <p class="card-desc">Failure analysis verifies JWT via Spring, stores AI session state in Redis,
-                        queries Qdrant context, and generates recommendations with LLM.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card backend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="backend-fastapi-auth"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">FastAPI Auth Flow</h3>
-                    <p class="card-desc">All protected AI endpoints validate bearer tokens by calling Spring verify API
-                        through shared httpx client and map verified user context for services.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card backend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="backend-fastapi-packages"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">FastAPI Package Map</h3>
-                    <p class="card-desc">API router, dependency graph, services, domain interfaces, and infrastructure
-                        clients are split for testability and runtime flexibility.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card backend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="backend-fastapi-domain-rules"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">FastAPI Domain Rules</h3>
-                    <p class="card-desc">Recommendations are normalized with JSON parsing and fallback rules, while
-                        feedback submission enforces session validity, index bounds, and recommendation mapping
-                        integrity.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card backend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="backend-fastapi-state-management"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">FastAPI State Management</h3>
-                    <p class="card-desc">AI session lifecycle is persisted in Redis from analyzing to completed state,
-                        with category/recommendation snapshots and feedback metadata updates after task creation.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card backend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="backend-fastapi-feedback"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">FastAPI Feedback Path</h3>
-                    <p class="card-desc">Selected recommendation indexes are resolved from Redis session snapshot and
-                        sent to Spring task API through SpringClient.create_tasks.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card backend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="backend-fastapi-troubleshooting"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">FastAPI Troubleshooting</h3>
-                    <p class="card-desc">Hardened AI flow by handling token/verify failures, recommendation parsing
-                        fallbacks, invalid feedback selections, mapping mismatches, and cache/vector errors with
-                        resilient degradation paths.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-        </section>
-
-        <!-- Frontend Services Section -->
-        <div id="frontend-services" class="section-header">
-            <h2 class="section-title">FRONTEND_SERVICES</h2>
-        </div>
-        <section class="service-grid">
-            <article class="service-card frontend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="frontend-monorepo-architecture"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Frontend Monorepo Architecture</h3>
-                    <p class="card-desc">Apps, platform adapters, and core packages are split by dependency direction
-                        to keep business logic platform-independent and reusable across Web/RN/Electron.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card frontend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="frontend-api-bridge"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Frontend Auth & API Bridge</h3>
-                    <p class="card-desc">Spring requests use `fetchBaseQuery` with reauth, while FastAPI AI requests
-                        use token-manager-backed codegen clients via `fakeBaseQuery` queryFn integration.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card frontend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="frontend-package-map"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Frontend Package Map</h3>
-                    <p class="card-desc">Core modules (`api`, `store`, `domain`, `hooks`, `services`, `usecases`,
-                        `types`, `utils`) are organized to enforce predictable layering and import boundaries.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card frontend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="frontend-rtk-single-source"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">RTK Single Source</h3>
-                    <p class="card-desc">RTK Query is the single source of truth for server state. Query cache,
-                        optimistic patches, and rollback logic are centralized in API services.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card frontend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="frontend-di-composition"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">DI Composition Flow</h3>
-                    <p class="card-desc">`CoreServicesProvider` assembles hook-factory services, orchestration
-                        services, and usecases on top of a shared store for consistent feature wiring.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card frontend-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="frontend-troubleshooting-patterns"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Troubleshooting Patterns</h3>
-                    <p class="card-desc">Cache sync, 202-empty-body handling, optimistic consistency, field mapping,
-                        and infinite-render guards are documented and reflected in current implementation patterns.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-        </section>
-
-        <!-- DevOps Services Section -->
-        <div id="devops-services" class="section-header">
-            <h2 class="section-title">DEVOPS_SERVICES</h2>
-        </div>
-        <section class="service-grid devops-service-grid">
-            <div class="devops-group-divider">
-                <span class="devops-group-title">DELIVERY PIPELINE</span>
-                <span class="devops-group-desc">Selective CI / Integration Gate / Secure CD / Image Promotion</span>
-            </div>
-
-            <article class="service-card devops-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="devops-ci-change-detection"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">CI Change Detection</h3>
-                    <p class="card-desc">`dorny/paths-filter` routes PR changes into selective Spring, FastAPI,
-                        Frontend, Nginx, and Monitoring jobs so unchanged stacks skip expensive builds.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card devops-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="devops-ci-integration-gate"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">CI Integration Gate</h3>
-                    <p class="card-desc">`docker-compose.dev-CI.yml` brings up app plus dependencies, validates
-                        health/proxy paths, and blocks promotion until integration checks and Trivy scans pass.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card devops-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="devops-cd-wireguard"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">CD via WireGuard</h3>
-                    <p class="card-desc">Push to `main` or `dev` triggers temporary WireGuard tunnel, remote compose
-                        sync, branch-specific env injection, controlled deployment, then guaranteed VPN teardown.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card devops-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="devops-image-promotion"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Image Promotion Flow</h3>
-                    <p class="card-desc">Built SHA tags are resolved to immutable digests and promoted with
-                        `imagetools create` into stable branch tags (`--dev`, `--prod`) for deterministic deploys.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <div class="devops-group-divider">
-                <span class="devops-group-title">RUNTIME INFRA</span>
-                <span class="devops-group-desc">Compose Topology / Build Strategy / Edge Security / Observability</span>
-            </div>
-
-            <article class="service-card devops-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="devops-compose-topology"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Compose Runtime Topology</h3>
-                    <p class="card-desc">`dev`, `database`, `network-utils`, and `monitoring` compose layers build one
-                        networked runtime with health-gated dependencies across API, data, cert, and telemetry stacks.
-                    </p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card devops-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="devops-docker-build-map"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Docker Build Map</h3>
-                    <p class="card-desc">Spring Gradle cache mounts, FastAPI uv multi-stage sync, and Nginx+Frontend
-                        image assembly are separated into optimized stages with non-root runtime defaults.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card devops-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="devops-nginx-runtime-validation"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Nginx Runtime Validation</h3>
-                    <p class="card-desc">Entrypoint pipeline renders templates, verifies unresolved variables,
-                        performs `nginx -t`, and fails fast before serving traffic when configuration is unsafe.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card devops-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="devops-edge-security"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Edge Security Model</h3>
-                    <p class="card-desc">Cloudflare Tunnel hides origin IP via outbound-only edge path, while Certbot
-                        DNS-01, DDClient, and WireGuard-only SSH keep external attack surface minimized.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card devops-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="devops-observability-pipeline"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Observability Pipeline</h3>
-                    <p class="card-desc">Prometheus scrapes app/exporter metrics, Grafana visualizes metrics/logs,
-                        and Alertmanager routes severity-based incidents to Slack with secret-backed webhooks.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <div class="devops-group-divider">
-                <span class="devops-group-title">LOAD & RELIABILITY</span>
-                <span class="devops-group-desc">k6 Profiles / Stress Mode Switch / Operational Troubleshooting</span>
-            </div>
-
-            <article class="service-card devops-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="devops-k6-load-architecture"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">k6 Load Architecture</h3>
-                    <p class="card-desc">Scenario suites share auth refresh/backoff utilities, profile-based ramping
-                        (`fast_test`, `stress2000`, `spike`), and optional CDN bypass paths for origin-only analysis.
-                    </p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card devops-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="devops-stress-mode-lifecycle"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Stress Mode Lifecycle</h3>
-                    <p class="card-desc">Dedicated workflows toggle stress mode on/refresh/down by composing isolated
-                        `.env.stress`, test database stack, and controlled teardown for safe repeatable load tests.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-
-            <article class="service-card devops-card">
-                <div class="card-visual">
-                    <div class="mermaid" data-mermaid-id="devops-troubleshooting-patterns"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">DevOps Troubleshooting</h3>
-                    <p class="card-desc">Known incidents include Cloudflare tunnel protocol mismatch, OAuth redirect
-                        proto loss, k6 summary rounding blind spots, and high-VU host freeze mitigations.</p>
-                    <a href="#" class="card-link">LEARN MORE</a>
-                </div>
-            </article>
-        </section>
-
-        <!-- Contact: Comms -->
         <section id="contact" class="panel contact-panel">
             <div class="panel-header">
-                <span class="panel-title">CONTACT</span>
-                <span class="panel-uid">ID: COMMS-01</span>
+                <span id="contact-panel-title" class="panel-title">CONTACT</span>
+                <span id="contact-panel-uid" class="panel-uid">ID: COMMS-01</span>
             </div>
             <div class="contact-content">
-                <p>Submit transmission to initiate collaboration.</p>
-                <div class="contact-actions">
-                    <a href="mailto:yohan032yohan@gmail.com" class="action-btn">
-                        <span class="icon">✉</span> SEND_EMAIL
-                    </a>
-                    <a href="https://github.com/ramyo564" class="action-btn" target="_blank"
-                        rel="noopener noreferrer">
-                        <span class="icon">⚡</span> GITHUB
-                    </a>
-                    <a href="https://www.youtube.com/@yohanjang-xe9td" class="action-btn" target="_blank"
-                        rel="noopener noreferrer">
-                        <span class="icon">▶</span> YOUTUBE
-                    </a>
-                </div>
+                <p id="contact-description">Submit transmission to initiate collaboration.</p>
+                <div id="contact-actions" class="contact-actions"></div>
             </div>
         </section>
     </main>
@@ -570,17 +77,11 @@
     <div id="mermaid-modal" class="mermaid-modal" aria-hidden="true">
         <div class="mermaid-modal-backdrop" data-mermaid-close></div>
         <div class="mermaid-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="mermaid-modal-title">
-            <button type="button" class="mermaid-modal-close" data-mermaid-close aria-label="Close expanded diagram">
-                CLOSE
-            </button>
-            <div class="mermaid-modal-header">
-                <span id="mermaid-modal-title">Expanded Diagram</span>
-            </div>
+            <button class="mermaid-modal-close" type="button" data-mermaid-close>CLOSE</button>
+            <div id="mermaid-modal-title" class="mermaid-modal-header">Mermaid Diagram</div>
             <div id="mermaid-modal-content" class="mermaid-modal-content"></div>
         </div>
     </div>
-
-    <div class="grid-overlay"></div>
 </body>
 
 </html>
