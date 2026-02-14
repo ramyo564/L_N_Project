@@ -41,7 +41,10 @@ const mapCards = (ids) => ids.map((id) => ({
     mermaidId: id,
     title: cardMeta[id]?.title ?? id,
     description: cardMeta[id]?.description ?? '',
-    learnMore: learnMoreLinks[id] ?? '#'
+    links: [
+        { label: 'EVIDENCE', href: `./evidence/l_n_project/index.html#${id}`, variant: 'primary' },
+        { label: 'README', href: learnMoreLinks[id] ?? '#', variant: 'ghost' }
+    ]
 }));
 
 export const templateConfig = {
@@ -142,6 +145,7 @@ export const templateConfig = {
         actions: [
             { label: 'SEND_EMAIL', href: 'mailto:yohan032yohan@gmail.com' },
             { label: 'GITHUB', href: 'https://github.com/ramyo564' },
+            { label: 'EVIDENCE', href: './evidence/l_n_project/index.html' },
             { label: 'YOUTUBE', href: 'https://www.youtube.com/@yohanjang-xe9td' }
         ]
     },

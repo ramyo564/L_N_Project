@@ -96,7 +96,10 @@ function setupMobileNav() {
 
     nav.addEventListener('click', (event) => {
         const target = event.target;
-        if (target instanceof HTMLElement && target.classList.contains('nav-item')) {
+        if (
+            target instanceof HTMLElement &&
+            (target.classList.contains('nav-item') || target.classList.contains('nav-sub-item'))
+        ) {
             closeNav();
         }
     });
@@ -268,6 +271,93 @@ function createGroupDivider(group, sectionTheme) {
     return divider;
 }
 
+function createMetaLine(label, value) {
+    if (!value) {
+        return null;
+    }
+
+    const line = document.createElement('p');
+    line.className = 'card-meta-line';
+
+    const key = document.createElement('span');
+    key.className = 'meta-label';
+    key.textContent = `${label}:`;
+
+    const text = document.createElement('span');
+    text.className = 'meta-value';
+    text.textContent = value;
+
+    line.append(key, text);
+    return line;
+}
+
+function createTagList(tags) {
+    const normalizedTags = Array.isArray(tags) ? tags.filter(Boolean) : [];
+    if (normalizedTags.length === 0) {
+        return null;
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'card-tags';
+
+    normalizedTags.forEach((tag) => {
+        const item = document.createElement('span');
+        item.className = 'card-tag';
+        item.textContent = tag;
+        wrapper.appendChild(item);
+    });
+
+    return wrapper;
+}
+
+function createHighlightList(items) {
+    const normalizedItems = Array.isArray(items) ? items.filter(Boolean) : [];
+    if (normalizedItems.length === 0) {
+        return null;
+    }
+
+    const list = document.createElement('ul');
+    list.className = 'card-highlights';
+    normalizedItems.forEach((item) => {
+        const line = document.createElement('li');
+        line.textContent = item;
+        list.appendChild(line);
+    });
+    return list;
+}
+
+function createCardLinks(card) {
+    const links = Array.isArray(card.links) ? card.links.filter((item) => item?.href) : [];
+    if (links.length === 0 && card.learnMore && card.learnMore !== '#') {
+        links.push({ label: card.linkLabel ?? 'LEARN MORE', href: card.learnMore });
+    }
+
+    if (links.length === 0) {
+        return null;
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'card-links';
+
+    links.forEach((item) => {
+        const link = document.createElement('a');
+        link.className = 'card-link';
+        const variant = String(item.variant ?? '').trim().toLowerCase();
+        if (variant) {
+            link.classList.add(`is-${variant}`);
+        }
+        link.href = item.href;
+        link.textContent = item.label || 'LINK';
+        if (!String(item.href).startsWith('mailto:')) {
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+        }
+        wrapper.appendChild(link);
+    });
+
+    return wrapper;
+}
+
 function createServiceCard(card, sectionConfig) {
     const article = document.createElement('article');
     article.className = `service-card ${sectionConfig.cardClass ?? ''} ${card.cardClass ?? ''}`.trim();
@@ -291,26 +381,41 @@ function createServiceCard(card, sectionConfig) {
     title.className = 'card-title';
     title.textContent = card.title ?? 'Card Title';
 
+    const subtitleText = card.subtitle ?? card.period ?? '';
+    const subtitle = document.createElement('p');
+    subtitle.className = 'card-subtitle';
+    subtitle.textContent = subtitleText;
+
     const description = document.createElement('p');
     description.className = 'card-desc';
-    description.textContent = card.description ?? '';
+    description.textContent = card.overview ?? card.description ?? '';
 
-    const link = document.createElement('a');
-    link.className = 'card-link';
-    link.textContent = card.linkLabel ?? 'LEARN MORE';
+    const roleLine = createMetaLine('ROLE', card.role);
+    const stackLine = createMetaLine('STACK', card.stackSummary);
+    const tags = createTagList(card.skills);
+    const highlights = createHighlightList(card.highlights);
+    const links = createCardLinks(card);
 
-    if (card.learnMore && card.learnMore !== '#') {
-        link.href = card.learnMore;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-    } else {
-        link.href = '#';
-        link.classList.add('is-disabled');
-        link.setAttribute('aria-disabled', 'true');
-        link.textContent = 'NO LINK';
+    content.append(title);
+    if (subtitleText) {
+        content.append(subtitle);
     }
-
-    content.append(title, description, link);
+    content.append(description);
+    if (roleLine) {
+        content.append(roleLine);
+    }
+    if (stackLine) {
+        content.append(stackLine);
+    }
+    if (tags) {
+        content.append(tags);
+    }
+    if (highlights) {
+        content.append(highlights);
+    }
+    if (links) {
+        content.append(links);
+    }
     article.append(visual, content);
     return article;
 }
@@ -402,25 +507,58 @@ function buildDefaultNavigation() {
     });
 
     const topPanels = Array.isArray(templateConfig.topPanels) ? templateConfig.topPanels : [];
-    topPanels.forEach((panel, index) => {
-        items.push({
-            label: panel.navLabel || panel.panelTitle || `TOP_PANEL_${index + 1}`,
-            target: normalizeHashTarget(panel.sectionId || `top-panel-${index + 1}`)
-        });
-    });
-
-    items.push({
-        label: skills.panelTitle || 'SKILL_SET',
-        target: normalizeHashTarget(skills.sectionId || 'skill-set')
-    });
-
     const serviceSections = Array.isArray(templateConfig.serviceSections) ? templateConfig.serviceSections : [];
-    serviceSections.forEach((section) => {
-        items.push({
-            label: section.navLabel || section.title || section.id || 'SERVICES',
-            target: normalizeHashTarget(section.id || '')
+    const candidates = [];
+    let sequence = 0;
+
+    topPanels.forEach((panel, index) => {
+        candidates.push({
+            label: panel.navLabel || panel.panelTitle || `TOP_PANEL_${index + 1}`,
+            target: normalizeHashTarget(panel.sectionId || `top-panel-${index + 1}`),
+            sequence: sequence += 1
         });
     });
+
+    candidates.push({
+        label: skills.panelTitle || 'SKILL_SET',
+        target: normalizeHashTarget(skills.sectionId || 'skill-set'),
+        sequence: sequence += 1
+    });
+
+    serviceSections.forEach((section) => {
+        candidates.push({
+            label: section.navLabel || section.title || section.id || 'SERVICES',
+            target: normalizeHashTarget(section.id || ''),
+            sequence: sequence += 1
+        });
+    });
+
+    const resolveTargetTop = (target) => {
+        const targetId = String(target || '').replace(/^#/, '');
+        if (!targetId) {
+            return Number.POSITIVE_INFINITY;
+        }
+        const targetElement = byId(targetId);
+        if (!targetElement) {
+            return Number.POSITIVE_INFINITY;
+        }
+        return targetElement.getBoundingClientRect().top + window.scrollY;
+    };
+
+    candidates
+        .sort((left, right) => {
+            const topDiff = resolveTargetTop(left.target) - resolveTargetTop(right.target);
+            if (Math.abs(topDiff) > 0.5) {
+                return topDiff;
+            }
+            return left.sequence - right.sequence;
+        })
+        .forEach((item) => {
+            items.push({
+                label: item.label,
+                target: item.target
+            });
+        });
 
     items.push({
         label: contact.panelTitle || 'CONTACT',
@@ -450,6 +588,125 @@ function renderNavigation() {
     });
 }
 
+function setupScrollSpy() {
+    const nav = byId('header-nav');
+    if (!nav) {
+        return;
+    }
+
+    const links = Array.from(nav.querySelectorAll('.nav-item, .nav-sub-item'));
+    if (links.length === 0) {
+        return;
+    }
+
+    const targetMap = new Map();
+    links.forEach((link) => {
+        const href = String(link.getAttribute('href') || '');
+        if (!href.startsWith('#') || href.length < 2) {
+            return;
+        }
+
+        const targetId = href.slice(1);
+        const targetElement = byId(targetId);
+        if (!targetElement) {
+            return;
+        }
+
+        if (!targetMap.has(targetId)) {
+            targetMap.set(targetId, {
+                element: targetElement,
+                links: []
+            });
+        }
+        targetMap.get(targetId).links.push(link);
+    });
+
+    if (targetMap.size === 0) {
+        return;
+    }
+
+    let sortedTargets = [];
+    let currentActiveId = '';
+    let rafToken = 0;
+
+    const clearActive = () => {
+        links.forEach((link) => link.classList.remove('is-active'));
+    };
+
+    const activateTarget = (targetId) => {
+        if (!targetId || currentActiveId === targetId) {
+            return;
+        }
+        currentActiveId = targetId;
+        clearActive();
+
+        const matched = targetMap.get(targetId);
+        if (!matched) {
+            return;
+        }
+
+        matched.links.forEach((link) => link.classList.add('is-active'));
+    };
+
+    const rebuildTargetOrder = () => {
+        sortedTargets = Array.from(targetMap.entries())
+            .map(([targetId, payload]) => ({
+                targetId,
+                top: payload.element.getBoundingClientRect().top + window.scrollY
+            }))
+            .sort((left, right) => left.top - right.top);
+    };
+
+    const applyByScrollPosition = () => {
+        if (sortedTargets.length === 0) {
+            return;
+        }
+
+        const headerHeight = document.querySelector('.status-bar')?.offsetHeight ?? 0;
+        const baseline = window.scrollY + headerHeight + 28;
+        let activeId = sortedTargets[0].targetId;
+
+        for (let index = 0; index < sortedTargets.length; index += 1) {
+            if (baseline >= sortedTargets[index].top) {
+                activeId = sortedTargets[index].targetId;
+            } else {
+                break;
+            }
+        }
+
+        activateTarget(activeId);
+    };
+
+    const scheduleUpdate = () => {
+        if (rafToken !== 0) {
+            return;
+        }
+        rafToken = window.requestAnimationFrame(() => {
+            rafToken = 0;
+            applyByScrollPosition();
+        });
+    };
+
+    rebuildTargetOrder();
+    applyByScrollPosition();
+
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', () => {
+        rebuildTargetOrder();
+        scheduleUpdate();
+    });
+    window.addEventListener('hashchange', scheduleUpdate);
+
+    window.setTimeout(() => {
+        rebuildTargetOrder();
+        scheduleUpdate();
+    }, 160);
+    window.setTimeout(() => {
+        rebuildTargetOrder();
+        scheduleUpdate();
+    }, 720);
+}
+
 function injectMermaidSources() {
     const nodes = Array.from(document.querySelectorAll('.mermaid'));
     const diagrams = templateConfig.diagrams ?? {};
@@ -475,17 +732,117 @@ function setupMermaidModal() {
     const modal = byId('mermaid-modal');
     const modalContent = byId('mermaid-modal-content');
     const modalTitle = byId('mermaid-modal-title');
+    const modalDialog = modal?.querySelector('.mermaid-modal-dialog') ?? null;
 
-    if (!modal || !modalContent || !modalTitle) {
+    if (!modal || !modalContent || !modalTitle || !modalDialog) {
         return;
     }
 
     const targets = document.querySelectorAll('.graph-container, .card-visual');
+    const ZOOM_STEP = 0.15;
+    const ZOOM_MIN = 0.55;
+    const ZOOM_MAX = 3;
+
+    let zoom = 1;
+    let activeSvg = null;
+    let activeCanvas = null;
+    let baseSvgWidth = 0;
+    let baseSvgHeight = 0;
+    let isPanning = false;
+    let panStartX = 0;
+    let panStartY = 0;
+    let panStartScrollLeft = 0;
+    let panStartScrollTop = 0;
+
+    let controls = modal.querySelector('.mermaid-modal-controls');
+    if (!controls) {
+        controls = document.createElement('div');
+        controls.className = 'mermaid-modal-controls';
+        controls.innerHTML = `
+            <button class="mermaid-zoom-btn" type="button" data-mermaid-zoom="out" aria-label="Zoom out">-</button>
+            <button class="mermaid-zoom-btn" type="button" data-mermaid-zoom="reset" aria-label="Reset zoom">RESET</button>
+            <button class="mermaid-zoom-btn" type="button" data-mermaid-zoom="in" aria-label="Zoom in">+</button>
+            <span class="mermaid-zoom-value" aria-live="polite">100%</span>
+        `;
+        modalDialog.appendChild(controls);
+    }
+
+    const zoomValue = controls.querySelector('.mermaid-zoom-value');
+
+    const centerModalView = () => {
+        const maxLeft = modalContent.scrollWidth - modalContent.clientWidth;
+        if (maxLeft > 0) {
+            modalContent.scrollLeft = Math.floor(maxLeft / 2);
+            return;
+        }
+        modalContent.scrollLeft = 0;
+    };
+
+    const scheduleCenterModalView = () => {
+        window.requestAnimationFrame(() => {
+            centerModalView();
+            window.requestAnimationFrame(centerModalView);
+        });
+    };
+
+    const endPan = () => {
+        if (!isPanning) {
+            return;
+        }
+        isPanning = false;
+        modalContent.classList.remove('is-panning');
+    };
+
+    const applyZoom = () => {
+        if (!activeSvg || !activeCanvas) {
+            return;
+        }
+
+        const nextWidth = Math.max(1, Math.round(baseSvgWidth * zoom));
+        const nextHeight = Math.max(1, Math.round(baseSvgHeight * zoom));
+        activeCanvas.style.width = `${nextWidth}px`;
+        activeCanvas.style.height = `${nextHeight}px`;
+        activeSvg.style.maxWidth = 'none';
+        activeSvg.style.width = '100%';
+        activeSvg.style.height = '100%';
+        activeSvg.setAttribute('width', String(baseSvgWidth));
+        activeSvg.setAttribute('height', String(baseSvgHeight));
+
+        if (zoom > 1.001) {
+            modalContent.classList.add('can-pan');
+        } else {
+            endPan();
+            modalContent.classList.remove('can-pan');
+        }
+
+        if (zoomValue) {
+            zoomValue.textContent = `${Math.round(zoom * 100)}%`;
+        }
+    };
+
+    const setZoom = (nextZoom) => {
+        const clampedZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, nextZoom));
+        if (Math.abs(clampedZoom - zoom) < 0.0001) {
+            return;
+        }
+        zoom = clampedZoom;
+        applyZoom();
+    };
 
     const closeModal = () => {
         modal.classList.remove('is-open');
         modal.setAttribute('aria-hidden', 'true');
         modalContent.replaceChildren();
+        endPan();
+        modalContent.classList.remove('can-pan');
+        activeSvg = null;
+        activeCanvas = null;
+        baseSvgWidth = 0;
+        baseSvgHeight = 0;
+        zoom = 1;
+        if (zoomValue) {
+            zoomValue.textContent = '100%';
+        }
         document.body.classList.remove('modal-open');
     };
 
@@ -496,21 +853,48 @@ function setupMermaidModal() {
         }
 
         const clonedSvg = sourceSvg.cloneNode(true);
+        clonedSvg.style.maxWidth = 'none';
+        clonedSvg.style.width = '100%';
+        clonedSvg.style.height = '100%';
+
         const viewBox = sourceSvg.getAttribute('viewBox');
+        let calculatedBaseWidth = 0;
+        let calculatedBaseHeight = 0;
         if (viewBox) {
             const parts = viewBox.trim().split(/\s+/).map(Number);
             if (parts.length === 4 && parts.every(Number.isFinite)) {
-                const zoom = 1.35;
-                clonedSvg.setAttribute('width', String(Math.round(parts[2] * zoom)));
-                clonedSvg.setAttribute('height', String(Math.round(parts[3] * zoom)));
+                const modalBaseScale = 1.08;
+                calculatedBaseWidth = Math.round(parts[2] * modalBaseScale);
+                calculatedBaseHeight = Math.round(parts[3] * modalBaseScale);
             }
-        } else {
-            const rect = sourceSvg.getBoundingClientRect();
-            clonedSvg.setAttribute('width', String(Math.round(rect.width * 1.35)));
-            clonedSvg.setAttribute('height', String(Math.round(rect.height * 1.35)));
         }
 
-        modalContent.replaceChildren(clonedSvg);
+        if (calculatedBaseWidth <= 0 || calculatedBaseHeight <= 0) {
+            const rect = sourceSvg.getBoundingClientRect();
+            const modalBaseScale = 1.08;
+            calculatedBaseWidth = Math.max(1, Math.round(rect.width * modalBaseScale));
+            calculatedBaseHeight = Math.max(1, Math.round(rect.height * modalBaseScale));
+        }
+
+        baseSvgWidth = calculatedBaseWidth;
+        baseSvgHeight = calculatedBaseHeight;
+
+        clonedSvg.setAttribute('width', String(baseSvgWidth));
+        clonedSvg.setAttribute('height', String(baseSvgHeight));
+
+        const canvas = document.createElement('div');
+        canvas.className = 'mermaid-modal-canvas';
+        canvas.style.width = `${baseSvgWidth}px`;
+        canvas.style.height = `${baseSvgHeight}px`;
+        canvas.appendChild(clonedSvg);
+
+        modalContent.replaceChildren(canvas);
+        modalContent.scrollLeft = 0;
+        modalContent.scrollTop = 0;
+        activeCanvas = canvas;
+        activeSvg = clonedSvg;
+        zoom = 1;
+        applyZoom();
 
         const titleText =
             target.closest('.service-card')?.querySelector('.card-title')?.textContent?.trim() ||
@@ -521,7 +905,80 @@ function setupMermaidModal() {
         modal.classList.add('is-open');
         modal.setAttribute('aria-hidden', 'false');
         document.body.classList.add('modal-open');
+        scheduleCenterModalView();
     };
+
+    controls.querySelectorAll('[data-mermaid-zoom]').forEach((button) => {
+        button.addEventListener('click', (event) => {
+            const control = event.currentTarget;
+            if (!(control instanceof HTMLElement)) {
+                return;
+            }
+            const action = control.getAttribute('data-mermaid-zoom');
+            if (!action || !modal.classList.contains('is-open')) {
+                return;
+            }
+
+            if (action === 'in') {
+                setZoom(zoom + ZOOM_STEP);
+                return;
+            }
+            if (action === 'out') {
+                setZoom(zoom - ZOOM_STEP);
+                return;
+            }
+            zoom = 1;
+            applyZoom();
+            scheduleCenterModalView();
+        });
+    });
+
+    modalContent.addEventListener('wheel', (event) => {
+        if (!modal.classList.contains('is-open') || !activeSvg || !event.ctrlKey) {
+            return;
+        }
+        event.preventDefault();
+        if (event.deltaY < 0) {
+            setZoom(zoom + ZOOM_STEP);
+            return;
+        }
+        setZoom(zoom - ZOOM_STEP);
+    }, { passive: false });
+
+    modalContent.addEventListener('pointerdown', (event) => {
+        if (!modal.classList.contains('is-open') || !activeSvg || zoom <= 1.001) {
+            return;
+        }
+        if (event.button !== 0) {
+            return;
+        }
+        isPanning = true;
+        panStartX = event.clientX;
+        panStartY = event.clientY;
+        panStartScrollLeft = modalContent.scrollLeft;
+        panStartScrollTop = modalContent.scrollTop;
+        modalContent.classList.add('is-panning');
+        event.preventDefault();
+    });
+
+    modalContent.addEventListener('pointermove', (event) => {
+        if (!isPanning) {
+            return;
+        }
+        const deltaX = event.clientX - panStartX;
+        const deltaY = event.clientY - panStartY;
+        modalContent.scrollLeft = panStartScrollLeft - deltaX;
+        modalContent.scrollTop = panStartScrollTop - deltaY;
+        event.preventDefault();
+    });
+
+    modalContent.addEventListener('pointerup', endPan);
+    modalContent.addEventListener('pointercancel', endPan);
+    modalContent.addEventListener('pointerleave', (event) => {
+        if (isPanning && !(event.buttons & 1)) {
+            endPan();
+        }
+    });
 
     targets.forEach((target) => {
         target.classList.add('mermaid-zoom-target');
@@ -543,8 +1000,28 @@ function setupMermaidModal() {
     });
 
     document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+        if (!modal.classList.contains('is-open')) {
+            return;
+        }
+        if (event.key === 'Escape') {
             closeModal();
+            return;
+        }
+        if (event.key === '+' || event.key === '=') {
+            event.preventDefault();
+            setZoom(zoom + ZOOM_STEP);
+            return;
+        }
+        if (event.key === '-' || event.key === '_') {
+            event.preventDefault();
+            setZoom(zoom - ZOOM_STEP);
+            return;
+        }
+        if (event.key === '0') {
+            event.preventDefault();
+            zoom = 1;
+            applyZoom();
+            scheduleCenterModalView();
         }
     });
 }
@@ -552,16 +1029,30 @@ function setupMermaidModal() {
 document.addEventListener('DOMContentLoaded', async () => {
     setSystemInfo();
     renderHero();
+    renderServiceSections();
     renderTopPanels();
     renderSkills();
-    renderServiceSections();
     renderContact();
     renderNavigation();
     setupUptime();
     setupMobileNav();
 
     const mermaidNodes = injectMermaidSources();
-    await mermaid.run({ nodes: mermaidNodes });
+    for (let index = 0; index < mermaidNodes.length; index += 1) {
+        const node = mermaidNodes[index];
+        const tempClass = `mermaid-render-target-${index}`;
+        node.classList.add(tempClass);
+        try {
+            await mermaid.run({ querySelector: `.${tempClass}` });
+        } catch (error) {
+            console.error('Mermaid render failed for node:', node, error);
+            const failedId = node.getAttribute('data-mermaid-id') || 'unknown';
+            node.innerHTML = `<p style="margin:0;color:#ffb4b4;">Diagram render failed: ${failedId}</p>`;
+        } finally {
+            node.classList.remove(tempClass);
+        }
+    }
 
     setupMermaidModal();
+    setupScrollSpy();
 });

@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L_N_Project Evidence</title>
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #080e18;
+            --panel: #0f1623;
+            --line: #233248;
+            --text: #d8e2f2;
+            --muted: #95a7c4;
+            --blue: #58a6ff;
+            --gold: #d29922;
+            --green: #2ea043;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Inter, 'Segoe UI', sans-serif;
+            background: radial-gradient(circle at 20% 10%, #132034, var(--bg) 60%);
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .index-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            border-bottom: 1px solid var(--line);
+            background: rgba(8, 14, 24, 0.94);
+            backdrop-filter: blur(5px);
+        }
+
+        .index-inner {
+            width: min(1240px, 92vw);
+            margin: 0 auto;
+            padding: 12px 0;
+        }
+
+        .index-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .index-title {
+            margin: 0;
+            font-size: 0.96rem;
+            color: var(--blue);
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.03em;
+        }
+
+        .index-toggle {
+            display: inline-flex;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: rgba(88, 166, 255, 0.08);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+
+        .index-nav {
+            margin-top: 10px;
+            display: none;
+            max-height: min(56vh, 460px);
+            overflow: auto;
+            padding-right: 2px;
+        }
+
+        .index-nav.is-open {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .index-link {
+            color: var(--text);
+            text-decoration: none;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 6px 9px;
+            display: block;
+            background: rgba(88, 166, 255, 0.05);
+            font-size: 0.78rem;
+        }
+
+        .index-link:hover {
+            border-color: var(--blue);
+        }
+
+        .wrap {
+            width: min(1240px, 92vw);
+            margin: 0 auto;
+            padding: 16px 0 60px;
+        }
+
+        .panel {
+            background: linear-gradient(180deg, rgba(15, 22, 35, 0.96), rgba(9, 14, 24, 0.96));
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 18px 20px;
+            margin-bottom: 16px;
+        }
+
+        h1,
+        h2,
+        h3 {
+            margin: 0;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.03em;
+        }
+
+        h2 {
+            font-size: 1rem;
+            color: var(--gold);
+            margin-bottom: 10px;
+        }
+
+        h3 {
+            font-size: 0.88rem;
+            color: var(--blue);
+            margin-top: 12px;
+            margin-bottom: 8px;
+        }
+
+        p,
+        li {
+            margin: 0;
+            color: var(--text);
+            font-size: 0.92rem;
+        }
+
+        ul {
+            margin: 0;
+            padding-left: 18px;
+            display: grid;
+            gap: 6px;
+        }
+
+        a {
+            color: #9bc5ff;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .readme-source-link {
+            display: inline-block;
+            max-width: 100%;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .case-summary {
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            display: inline-block;
+            border: 1px solid var(--green);
+            color: #9be9a8;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            margin-bottom: 8px;
+        }
+
+        .code-snippet {
+            margin-top: 8px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.24);
+        }
+
+        .code-snippet-label {
+            display: block;
+            padding: 7px 10px;
+            border-bottom: 1px solid var(--line);
+            color: var(--blue);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            background: rgba(88, 166, 255, 0.08);
+        }
+
+        .code-snippet pre {
+            margin: 0;
+            padding: 10px 12px;
+            overflow-x: auto;
+        }
+
+        .code-snippet pre code {
+            display: block;
+            white-space: pre;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.77rem;
+            line-height: 1.5;
+            color: inherit;
+        }
+
+        .code-snippet pre code.hljs {
+            background: transparent;
+            padding: 0;
+        }
+
+        .ok {
+            color: #9be9a8;
+        }
+
+        .partial {
+            color: #f7c75a;
+        }
+
+        .evidence-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+            align-items: stretch;
+        }
+
+        .evidence-grid>.panel {
+            margin-bottom: 0;
+            height: 100%;
+        }
+
+        section[id] {
+            scroll-margin-top: 96px;
+        }
+
+        @media (max-width: 920px) {
+            .evidence-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .index-toggle {
+                display: inline-flex;
+            }
+
+            .index-nav {
+                display: none;
+                margin-top: 8px;
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                padding: 8px;
+                background: rgba(8, 14, 24, 0.98);
+            }
+
+            .index-nav.is-open {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+
+            .index-link {
+                font-size: 0.76rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="index-header">
+        <div class="index-inner">
+            <div class="index-top">
+                <h1 class="index-title">L_N_PROJECT EVIDENCE INDEX</h1>
+                <button id="index-toggle" class="index-toggle" type="button" aria-label="Toggle index navigation"
+                    aria-controls="index-nav" aria-expanded="true">CLOSE</button>
+            </div>
+            <nav id="index-nav" class="index-nav is-open" aria-label="Evidence index"></nav>
+        </div>
+    </header>
+
+    <main class="wrap">
+        <section class="panel">
+            <h2>Overview</h2>
+            <p class="muted">Hybrid evidence mode: architecture cards map to README anchors and verified implementation snippets.</p>
+            <p class="muted" style="margin-top:8px;">Code paths in this page are based on <strong>upgrade_todo (private repository)</strong>. Clicking file names opens the public README evidence for the same card, while snippets are extracted from actual implementation files.</p>
+        </section>
+
+        <section id="evidence-grid" class="evidence-grid"></section>
+
+        <section class="panel">
+            <h2>Note</h2>
+            <p class="muted">Code evidence list uses file-name-first display for readability. Full private path is available via tooltip on each link.</p>
+            <p class="muted" style="margin-top:8px;">Back to architecture dashboard: <a href="../../index.html">L_N_Project/docs/index.html</a></p>
+        </section>
+    </main>
+
+    <script type="module">
+        import { templateConfig } from '../../config.js';
+        import { learnMoreLinks } from '../../learnmore-links.js';
+
+        const toggle = document.getElementById('index-toggle');
+        const nav = document.getElementById('index-nav');
+        const evidenceGrid = document.getElementById('evidence-grid');
+
+        const closeNav = () => {
+            nav.classList.remove('is-open');
+            toggle.setAttribute('aria-expanded', 'false');
+            toggle.textContent = 'INDEX';
+        };
+
+        toggle.addEventListener('click', () => {
+            const nextOpen = !nav.classList.contains('is-open');
+            nav.classList.toggle('is-open', nextOpen);
+            toggle.setAttribute('aria-expanded', String(nextOpen));
+            toggle.textContent = nextOpen ? 'CLOSE' : 'INDEX';
+        });
+
+        nav.addEventListener('click', (event) => {
+            const target = event.target;
+            if (target instanceof HTMLElement && target.classList.contains('index-link')) {
+                closeNav();
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            const target = event.target;
+            if (!(target instanceof Node)) {
+                return;
+            }
+            if (!nav.contains(target) && !toggle.contains(target)) {
+                closeNav();
+            }
+        });
+
+        const toFileName = (path) => {
+            const cleanPath = String(path || '').split('#')[0].split('?')[0];
+            const parts = cleanPath.split('/').filter(Boolean);
+            return parts.length > 0 ? parts[parts.length - 1] : cleanPath || 'source';
+        };
+
+        const badgeFromId = (id) => {
+            if (id.startsWith('backend-spring-')) return 'BACKEND_SPRING';
+            if (id.startsWith('backend-fastapi-')) return 'BACKEND_FASTAPI';
+            if (id.startsWith('frontend-')) return 'FRONTEND';
+            if (id.startsWith('devops-')) return 'DEVOPS';
+            return 'EVIDENCE';
+        };
+
+        const springHexPaths = [
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/project/adapter/in/web/ProjectController.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/project/application/command/CreateProjectCommandHandler.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/project/domain/model/Project.java'
+        ];
+
+        const springAuthPaths = [
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/auth/adapter/in/web/AuthController.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/common/security/SecurityConfig.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/common/security/jwt/JwtAuthenticationFilter.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/common/security/jwt/JwtProvider.java'
+        ];
+
+        const springPackagePaths = [
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/auth/adapter/in/web/AuthController.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/project/adapter/in/web/ProjectController.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/task_mvc/adapter/in/web/TaskController.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/subtask_mvc/adapter/in/web/SubTaskController.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/common/security/SecurityConfig.java'
+        ];
+
+        const springDomainPaths = [
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/project/domain/model/Project.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/task_mvc/domain/model/Task.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/task_mvc/application/support/ProjectAccessVerifier.java'
+        ];
+
+        const springStatePaths = [
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/project/domain/model/Project.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/task_mvc/domain/model/Task.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/project/application/command/CompleteProjectCommandHandler.java'
+        ];
+
+        const springApiWritePaths = [
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/task_mvc/adapter/in/web/TaskController.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/task_mvc/application/command/CreateTaskCommandHandler.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/task_mvc/application/dto/command/CreateTaskCommand.java'
+        ];
+
+        const springWorkerPaths = [
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/common/infrastructure/messaging/RabbitMQConfig.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/common/infrastructure/messaging/RabbitListenerConfig.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/user/infrastructure/adapter/outbound/outbox/OutboxEventUserPublisher.java',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/user/infrastructure/adapter/inbound/messaging/UserCreationRequestedEventListener.java'
+        ];
+
+        const springTroublePaths = [
+            'docs/BE/spring/troubleShooting/2026-01-13-Redis_ShareNativeConnection_Performance.md',
+            'docs/BE/spring/troubleShooting/2025-12-10-rabbitmq-async-troubleshooting.md',
+            'docs/BE/spring/troubleShooting/2025-12-21-db-cache-issues.md',
+            'backend/bk-spring-dev-webflux-x/src/main/java/com/example/project/common/infrastructure/messaging/RabbitListenerConfig.java'
+        ];
+
+        const fastapiAnalyzePaths = [
+            'backend/bk-fastApi-dev/src/app/api/v1/endpoints.py',
+            'backend/bk-fastApi-dev/src/app/services/analysis_service.py',
+            'backend/bk-fastApi-dev/src/app/services/failure_analyzer.py'
+        ];
+
+        const fastapiAuthPaths = [
+            'backend/bk-fastApi-dev/src/app/core/auth.py',
+            'backend/bk-fastApi-dev/src/app/core/dependencies.py',
+            'backend/bk-fastApi-dev/src/app/infrastructure/spring_client.py'
+        ];
+
+        const fastapiPackagePaths = [
+            'backend/bk-fastApi-dev/src/app/core/dependencies.py',
+            'backend/bk-fastApi-dev/src/app/domain/interfaces/__init__.py',
+            'backend/bk-fastApi-dev/src/app/services/analysis_service.py',
+            'backend/bk-fastApi-dev/src/app/infrastructure/cache_manager.py'
+        ];
+
+        const fastapiDomainPaths = [
+            'backend/bk-fastApi-dev/src/app/services/failure_analyzer.py',
+            'backend/bk-fastApi-dev/src/app/services/feedback_service.py',
+            'backend/bk-fastApi-dev/src/app/domain/models/feedback.py'
+        ];
+
+        const fastapiStatePaths = [
+            'backend/bk-fastApi-dev/src/app/infrastructure/cache_manager.py',
+            'backend/bk-fastApi-dev/src/app/services/analysis_service.py',
+            'backend/bk-fastApi-dev/src/app/services/feedback_service.py'
+        ];
+
+        const fastapiFeedbackPaths = [
+            'backend/bk-fastApi-dev/src/app/api/v1/endpoints.py',
+            'backend/bk-fastApi-dev/src/app/services/feedback_service.py',
+            'backend/bk-fastApi-dev/src/app/infrastructure/spring_client.py'
+        ];
+
+        const fastapiTroublePaths = [
+            'docs/BE/fastApi/troubleShooting/2025-12-21-ai-task-creation.md',
+            'backend/bk-fastApi-dev/src/app/core/auth.py',
+            'backend/bk-fastApi-dev/src/app/services/feedback_service.py'
+        ];
+
+        const frontendMonorepoPaths = [
+            'frontend/pnpm-workspace.yaml',
+            'frontend/turbo.json',
+            'frontend/packages/core/store/src/factories/createAppStore.ts',
+            'frontend/packages/apps/web/src/app/providers/CoreServicesProvider.tsx'
+        ];
+
+        const frontendApiBridgePaths = [
+            'frontend/packages/core/store/src/baseQueryFactory.ts',
+            'frontend/packages/core/store/src/fastApiBaseQuery.ts',
+            'frontend/packages/core/api/src/fastapi/service.ts'
+        ];
+
+        const frontendPackageMapPaths = [
+            'frontend/packages/core/store/src/index.ts',
+            'frontend/packages/core/domain/src/index.ts',
+            'frontend/packages/core/services/src/index.ts',
+            'frontend/packages/core/usecases/src/tasks/index.ts'
+        ];
+
+        const frontendRtkPaths = [
+            'frontend/packages/core/store/src/services/projectApi.ts',
+            'frontend/packages/core/store/src/services/taskApi.ts',
+            'frontend/packages/core/store/src/services/fastApiAiApi.ts'
+        ];
+
+        const frontendDiPaths = [
+            'frontend/packages/apps/web/src/app/providers/CoreServicesProvider.tsx',
+            'frontend/packages/platform/web-next/src/providers/NextStoreProvider.tsx',
+            'frontend/packages/platform/web-next/src/hooks/useSSRStore.ts'
+        ];
+
+        const frontendTroublePaths = [
+            'frontend/docs/troubleshooting/2026-01-18-rtk-query-project-cache-sync.md',
+            'frontend/docs/troubleshooting/2025-12-21-optimistic-update-issues.md',
+            'frontend/packages/core/store/src/services/projectApi.ts'
+        ];
+
+        const devopsChangePaths = [
+            '.github/workflows/ci.yml',
+            'docker-compose.dev-CI.yml'
+        ];
+
+        const devopsIntegrationPaths = [
+            '.github/workflows/ci.yml',
+            'docker-compose.dev-CI.yml',
+            'monitoring/prometheus/prometheus.yml'
+        ];
+
+        const devopsCdPaths = [
+            '.github/workflows/deploy-via-wireguard.yml',
+            'docker-compose.dev.yml',
+            'docker-compose.prod.yml'
+        ];
+
+        const devopsPromotionPaths = [
+            '.github/workflows/ci.yml'
+        ];
+
+        const devopsComposePaths = [
+            'docker-compose.dev.yml',
+            'docker-compose.database.yml',
+            'docker-compose.monitoring.yml',
+            'docker-compose.network-utils.yml'
+        ];
+
+        const devopsBuildPaths = [
+            '.github/workflows/ci.yml',
+            'backend/bk-spring-dev-webflux-x/Dockerfile',
+            'backend/bk-fastApi-dev/Dockerfile',
+            'dev/nginx/Dockerfile'
+        ];
+
+        const devopsNginxPaths = [
+            'dev/nginx/scripts/docker-entrypoint.sh',
+            'dev/nginx/nginx.conf',
+            'dev/nginx/snippets/spring.conf.template',
+            'dev/nginx/snippets/fastapi.conf.template'
+        ];
+
+        const devopsEdgePaths = [
+            '.github/workflows/deploy-via-wireguard.yml',
+            'dev/nginx/docs/cloudflare-tunnel-guide.md',
+            'dev/nginx/docs/oauth2-redirect-uri-troubleshooting.md'
+        ];
+
+        const devopsObsPaths = [
+            'monitoring/prometheus/prometheus.yml',
+            'monitoring/alertmanager/config.yml',
+            'monitoring/grafana/provisioning/dashboards/dashboards.yml',
+            'monitoring/loki/config.yml'
+        ];
+
+        const devopsK6Paths = [
+            'k6/config.js',
+            'k6/scenarios_2/test/load_test/read-load-test.js',
+            'k6/scenarios_2/test/load_test/write-load-test.js'
+        ];
+
+        const devopsStressPaths = [
+            '.github/workflows/stress-test-on.yml',
+            '.github/workflows/stress-test-refresh.yml',
+            '.github/workflows/stress-test-down.yml',
+            'docker-compose.database-test.yml'
+        ];
+
+        const devopsTroublePaths = [
+            'docs/DEV/NginX/troubleShooting/2026-01-18-oauth2-redirect-uri-troubleshooting.md',
+            'docs/DEV/k6/troubleShooting/2025-12-20-k6-summary-rounding-issue.md',
+            'docs/DEV/k6/troubleShooting/2026-01-10-high-vu-system-freeze-troubleshooting.md'
+        ];
+
+        const getCodePaths = (id) => {
+            if (id.startsWith('backend-spring-')) {
+                if (id.includes('auth')) return springAuthPaths;
+                if (id.includes('packages')) return springPackagePaths;
+                if (id.includes('domain-rules')) return springDomainPaths;
+                if (id.includes('state-management')) return springStatePaths;
+                if (id.includes('api-write')) return springApiWritePaths;
+                if (id.includes('worker-consume')) return springWorkerPaths;
+                if (id.includes('troubleshooting')) return springTroublePaths;
+                return springHexPaths;
+            }
+
+            if (id.startsWith('backend-fastapi-')) {
+                if (id.includes('auth')) return fastapiAuthPaths;
+                if (id.includes('packages')) return fastapiPackagePaths;
+                if (id.includes('domain-rules')) return fastapiDomainPaths;
+                if (id.includes('state-management')) return fastapiStatePaths;
+                if (id.includes('feedback')) return fastapiFeedbackPaths;
+                if (id.includes('troubleshooting')) return fastapiTroublePaths;
+                return fastapiAnalyzePaths;
+            }
+
+            if (id.startsWith('frontend-')) {
+                if (id.includes('api-bridge')) return frontendApiBridgePaths;
+                if (id.includes('package-map')) return frontendPackageMapPaths;
+                if (id.includes('rtk-single-source')) return frontendRtkPaths;
+                if (id.includes('di-composition')) return frontendDiPaths;
+                if (id.includes('troubleshooting')) return frontendTroublePaths;
+                return frontendMonorepoPaths;
+            }
+
+            if (id.startsWith('devops-')) {
+                if (id.includes('change-detection')) return devopsChangePaths;
+                if (id.includes('integration-gate')) return devopsIntegrationPaths;
+                if (id.includes('cd-wireguard')) return devopsCdPaths;
+                if (id.includes('image-promotion')) return devopsPromotionPaths;
+                if (id.includes('compose-topology')) return devopsComposePaths;
+                if (id.includes('docker-build-map')) return devopsBuildPaths;
+                if (id.includes('nginx-runtime-validation')) return devopsNginxPaths;
+                if (id.includes('edge-security')) return devopsEdgePaths;
+                if (id.includes('observability-pipeline')) return devopsObsPaths;
+                if (id.includes('k6-load-architecture')) return devopsK6Paths;
+                if (id.includes('stress-mode-lifecycle')) return devopsStressPaths;
+                if (id.includes('troubleshooting')) return devopsTroublePaths;
+                return devopsComposePaths;
+            }
+
+            return ['docs/diagrams.js', 'docs/config.js'];
+        };
+
+        const springHexSnippet = {
+            label: 'Spring Access Verification Flow',
+            language: 'java',
+            code: [
+                'public void verify(UUIDv7 projectId) {',
+                '  var userId = currentUserPort.currentUserId();',
+                '  boolean isOwner = projectOwnershipPort.isOwner(projectId, userId);',
+                '  if (!isOwner) {',
+                '    throw new ForbiddenProjectAccessException();',
+                '  }',
+                '  boolean active = projectValidationPort.isProjectActive(projectId);',
+                '  if (!active) {',
+                '    throw new ProjectNotFoundException(projectId);',
+                '  }',
+                '}'
+            ].join('\n')
+        };
+
+        const springAuthSnippet = {
+            label: 'JWT + Security Filter Chain',
+            language: 'java',
+            code: [
+                '.authorizeHttpRequests(authorize -> authorize',
+                '  .requestMatchers("/api/v1/auth/refresh", "/api/v1/auth/login").permitAll()',
+                '  .anyRequest().authenticated()',
+                ')',
+                '.addFilterBefore(',
+                '  new JwtAuthenticationFilter(jwtProvider, userDetailsService, refreshTokenPort),',
+                '  UsernamePasswordAuthenticationFilter.class',
+                ');',
+                '',
+                'if (jwt != null && jwtProvider.validateAccessToken(jwt)) {',
+                '  if (refreshTokenPort.isBlacklisted(jwt)) {',
+                '    throw new RuntimeException("Blacklisted access token");',
+                '  }',
+                '  SecurityContextHolder.getContext().setAuthentication(authentication);',
+                '}'
+            ].join('\n')
+        };
+
+        const springDomainSnippet = {
+            label: 'Domain Rules and State Guard',
+            language: 'java',
+            code: [
+                'private void updateStatus(TaskStatus newStatus) {',
+                '  if (isDeleted()) {',
+                '    throw new TaskValidationException("Cannot change the status of a deleted task");',
+                '  }',
+                '  this.status = newStatus;',
+                '  this.updatedAt = LocalDateTime.now();',
+                '}',
+                '',
+                'public void delete() {',
+                '  if (this.deletedAt != null) {',
+                '    throw new TaskValidationException("Task is already deleted");',
+                '  }',
+                '  this.status = TaskStatus.DELETED;',
+                '  this.deletedAt = LocalDateTime.now();',
+                '}'
+            ].join('\n')
+        };
+
+        const springApiWriteSnippet = {
+            label: 'Task Create Write Path',
+            language: 'java',
+            code: [
+                '@PostMapping("")',
+                'public ResponseEntity<TaskResponse> createTask(',
+                '  @PathVariable String projectId,',
+                '  @RequestBody TaskCreateRequest request) {',
+                '  var task = createTaskCommandHandler.handle(',
+                '    new CreateTaskCommand(UUIDv7.fromString(projectId), request.title(), request.description()));',
+                '  TaskResponse response = TaskResponse.from(task, List.of());',
+                '  java.net.URI location = java.net.URI.create(baseRequestUri + "/" + response.getId());',
+                '  return ResponseEntity.created(location).body(response);',
+                '}'
+            ].join('\n')
+        };
+
+        const springWorkerSnippet = {
+            label: 'Outbox Publisher + Rabbit Listener',
+            language: 'java',
+            code: [
+                '@Scheduled(fixedDelayString = "${user.outbox.publisher.fixed-delay:1000}")',
+                'public void publishPendingEvents() {',
+                '  List<OutboxEventUserEntity> batch = outboxEventUserRepository.findByStatus(PENDING, page);',
+                '  for (OutboxEventUserEntity entity : batch) {',
+                '    outboxEventUserProcessor.processOne(entity);',
+                '  }',
+                '}',
+                '',
+                '@RabbitListener(queues = "app.events.auth")',
+                'public class UserCreationRequestedEventListener {',
+                '  @RabbitHandler',
+                '  public void handleAuthCreatedEvent(AuthCreatedEvent event) {',
+                '    applicationEventPublisher.publishEvent(UserCreationRequestedEvent.fromAuth(event));',
+                '  }',
+                '}'
+            ].join('\n')
+        };
+
+        const springTroubleSnippet = {
+            label: 'Rabbit Listener Virtual Thread Tuning',
+            language: 'java',
+            code: [
+                '@Bean(name = "rabbitListenerVirtualExecutor", destroyMethod = "close")',
+                'public ExecutorService rabbitListenerVirtualExecutor() {',
+                '  ThreadFactory threadFactory = Thread.ofVirtual().name("rabbit-listener-", 0).factory();',
+                '  return Executors.newThreadPerTaskExecutor(threadFactory);',
+                '}',
+                '',
+                'factory.setTaskExecutor(new TaskExecutorAdapter(rabbitListenerVirtualExecutor));'
+            ].join('\n')
+        };
+
+        const fastapiAnalyzeSnippet = {
+            label: 'Failure Analyze Orchestration',
+            language: 'python',
+            code: [
+                'async def analyze_failure(self, request: FailureAnalysisRequest, user_id: str) -> FailureAnalysisResponse:',
+                '    session_id = await self._failure_analyzer.create_analysis_session(',
+                '        user_id, request.todo_title, request.failure_reason,',
+                '    )',
+                '    category = await self._failure_analyzer.analyze_failure_pattern(',
+                '        request.failure_reason, user_id,',
+                '    )',
+                '    recommendations = await self._recommendation_engine.generate_recommendations(',
+                '        session_id=session_id, category=category.get("category", "general"), user_id=user_id,',
+                '    )',
+                '    await self._update_session_snapshot(session_id=session_id, category=category, recommendations=recommendations, request=request)',
+                '    return FailureAnalysisResponse(session_id=session_id, category=category, recommendations=recommendations)'
+            ].join('\n')
+        };
+
+        const fastapiAuthSnippet = {
+            label: 'Bearer Verify via Spring API',
+            language: 'python',
+            code: [
+                'if credentials is None or not credentials.scheme.lower() == "bearer":',
+                '    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")',
+                '',
+                'resp = await client.get(verify_url, headers={"Authorization": f"Bearer {token}"})',
+                'if resp.status_code != 200:',
+                '    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token verification failed")',
+                '',
+                'payload = VerifyResponsePayload.model_validate(resp.json())',
+                'if payload.error or not payload.user.id:',
+                '    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid verification response")',
+                'return User(sub=payload.user.id, email=payload.user.email)'
+            ].join('\n')
+        };
+
+        const fastapiPackageSnippet = {
+            label: 'Dependency Graph Composition',
+            language: 'python',
+            code: [
+                '@lru_cache(maxsize=1)',
+                'def get_ai_client() -> IAIProvider:',
+                '    return create_ai_client_from_settings(settings)',
+                '',
+                'def get_analysis_service(',
+                '    analyzer: FailureAnalyzer = Depends(get_failure_analyzer),',
+                '    recommender: RecommendationEngine = Depends(get_recommendation_engine),',
+                '    cache: ICacheProvider = Depends(get_cache_manager),',
+                ') -> AnalysisService:',
+                '    return AnalysisService(',
+                '        failure_analyzer=analyzer, recommendation_engine=recommender, cache=cache, vector_db_factory=get_vector_db,',
+                '    )'
+            ].join('\n')
+        };
+
+        const fastapiDomainSnippet = {
+            label: 'Feedback Selection Guard and Mapping',
+            language: 'python',
+            code: [
+                'for idx in selection.selected_indices:',
+                '    if idx < 0 or idx >= len(recommendations):',
+                '        index_failures.append({"index": idx, "error": "index_out_of_range"})',
+                '        continue',
+                '    recommendation = recommendations[idx]',
+                '    selected_copy = dict(recommendation)',
+                '    selected_copy.setdefault("_selectedIndex", idx)',
+                '',
+                'if not selected_items:',
+                '    outcome.merge_failed(index_failures or [{"error": "no_selection"}])',
+                '    return outcome'
+            ].join('\n')
+        };
+
+        const fastapiStateSnippet = {
+            label: 'Redis Session Lifecycle',
+            language: 'python',
+            code: [
+                'async def set_session(self, session_id: str, data: dict, ttl: int = 3600) -> None:',
+                '    key = f"ai_session:{session_id}"',
+                '    await self._client.setex(key, ttl, json.dumps(data, ensure_ascii=False))',
+                '',
+                'async def update_session(self, session_id: str, data: dict) -> None:',
+                '    key = f"ai_session:{session_id}"',
+                '    ttl = await self._client.ttl(key)',
+                '    if ttl is None or ttl < 0:',
+                '        ttl = 3600',
+                '    await self._client.setex(key, ttl, json.dumps(data, ensure_ascii=False))'
+            ].join('\n')
+        };
+
+        const fastapiFeedbackSnippet = {
+            label: 'Feedback to Spring Task Create Bridge',
+            language: 'python',
+            code: [
+                'outcome = await feedback_service.submit_feedback(',
+                '    user_id=current_user.sub,',
+                '    selection=selection,',
+                '    auth_header=auth_header,',
+                ')',
+                '',
+                'spring_result = await self.task_repository.create_tasks(',
+                '    user_id, selection.project_id, selected_items, headers=headers,',
+                ')',
+                'outcome.created.extend(self._enhance_created_items(created_items, index_to_recommendation, recommendation_id_to_index))'
+            ].join('\n')
+        };
+
+        const fastapiTroubleSnippet = {
+            label: 'FastAPI Resilience and Error Branches',
+            language: 'python',
+            code: [
+                'except httpx.TimeoutException:',
+                '    raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="Auth service timed out")',
+                'except httpx.HTTPError:',
+                '    raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Auth service unavailable")',
+                '',
+                'except Exception as exc:',
+                '    logger.error("session update unexpected error: %s", exc, exc_info=True)'
+            ].join('\n')
+        };
+
+        const frontendMonorepoSnippet = {
+            label: 'Monorepo Package Boundaries',
+            language: 'yaml',
+            code: [
+                'packages:',
+                '  - packages/apps/*',
+                '  - packages/core/*',
+                '  - packages/platform/*',
+                '',
+                'tasks:',
+                '  build:',
+                '    dependsOn: ["^build"]',
+                '    outputs: ["dist/**", ".next/**"]'
+            ].join('\n')
+        };
+
+        const frontendApiBridgeSnippet = {
+            label: 'Spring + FastAPI Query Bridge',
+            language: 'typescript',
+            code: [
+                'export const createBaseQueryWithReauth = (platformConfig: PlatformConfig = {}) => {',
+                '  const baseQuery = createBaseQuery(platformConfig);',
+                '  return async (...baseQueryArgs: RawBaseQueryArgs) => {',
+                '    let result = await baseQuery(queryArgs, api, extraOptions);',
+                '    if (result.error && result.error.status === 401) {',
+                '      const refreshRes = await baseQuery({ url: "/api/v1/auth/refresh", method: "POST" }, api, extraOptions);',
+                '      if (refreshRes.data?.accessToken) api.dispatch(setAccessToken(refreshRes.data.accessToken));',
+                '    }',
+                '    return result;',
+                '  };',
+                '};',
+                '',
+                'const manager = getSharedFastApiTokenManager();',
+                'token = await manager.getAccessToken();'
+            ].join('\n')
+        };
+
+        const frontendPackageSnippet = {
+            label: 'Core Store Export Surface',
+            language: 'typescript',
+            code: [
+                'export { authApi, useLoginMutation, useGetCurrentUserQuery } from "./services/authApi";',
+                'export { taskApi, useCreateTaskMutation, useUpdateTaskMutation } from "./services/taskApi";',
+                'export { projectApi, useGetProjectsQuery, useReorderProjectsMutation } from "./services/projectApi";',
+                'export { fastApiAiApi, useAnalyzeFailureMutation, useSubmitFeedbackMutation } from "./services/fastApiAiApi";',
+                'export { createAppStore } from "./factories/createAppStore";'
+            ].join('\n')
+        };
+
+        const frontendRtkSnippet = {
+            label: 'RTK Query Optimistic Update',
+            language: 'typescript',
+            code: [
+                'createProject: builder.mutation<ProjectResponse, ProjectRequest>({',
+                '  async onQueryStarted(arg, { dispatch, queryFulfilled }) {',
+                '    const patchResult = dispatch(',
+                '      projectApi.util.updateQueryData("getProjects", undefined, (draft) => {',
+                '        draft.push(newProject);',
+                '      })',
+                '    );',
+                '    try {',
+                '      const { data } = await queryFulfilled;',
+                '      if (!data) return; // 202 accepted keep optimistic state',
+                '    } catch (error) {',
+                '      patchResult.undo();',
+                '    }',
+                '  },',
+                '})'
+            ].join('\n')
+        };
+
+        const frontendDiSnippet = {
+            label: 'CoreServices Provider Composition',
+            language: 'typescript',
+            code: [
+                'const services = useMemo((): CoreServices => {',
+                '  const authService = createAuthService({ store });',
+                '  const signupFlowService = createSignupFlowService({ authService, signupService });',
+                '  const projectsService = createProjectsBoardServiceWithStore(store);',
+                '  const taskDetailUsecase = createTaskDetailUsecaseWithStore(store, uuidv7);',
+                '  return { authService, signupService, signupFlowService, projectsService, taskDetailUsecase, ... };',
+                '}, [store]);'
+            ].join('\n')
+        };
+
+        const frontendTroubleSnippet = {
+            label: 'Rollback and Cache-Sync Troubleshooting Pattern',
+            language: 'typescript',
+            code: [
+                'const patchResult = dispatch(projectApi.util.updateQueryData("getProjects", undefined, updater));',
+                'try {',
+                '  await queryFulfilled;',
+                '} catch (error) {',
+                '  patchResult.undo();',
+                '}',
+                '',
+                'export const fastApiAiApi = createApi({',
+                '  baseQuery: fakeBaseQuery(),',
+                '  endpoints: (builder) => ({ /* queryFn controlled error branches */ })',
+                '});'
+            ].join('\n')
+        };
+
+        const devopsChangeSnippet = {
+            label: 'CI Change Detection (paths-filter)',
+            language: 'yaml',
+            code: [
+                '- id: filter',
+                '  uses: dorny/paths-filter@v3',
+                '  with:',
+                '    filters: |',
+                '      spring:',
+                '        - "backend/bk-spring-dev/**"',
+                '      fastapi:',
+                '        - "backend/bk-fastApi-dev/**"',
+                '      frontend:',
+                '        - "frontend/**"',
+                '      monitoring:',
+                '        - "monitoring/**"'
+            ].join('\n')
+        };
+
+        const devopsIntegrationSnippet = {
+            label: 'Integration Gate with Compose Health Checks',
+            language: 'bash',
+            code: [
+                'docker compose -f docker-compose.dev-CI.yml --env-file .env.BEFORE_DEV up -d postgres pgbouncer redis rabbitmq spring spring-worker',
+                '',
+                'MAX_RETRIES=20',
+                'while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do',
+                '  STATUS=$(docker inspect --format="{{.State.Health.Status}}" spring_dev 2>/dev/null || echo unknown)',
+                '  [ "$STATUS" = healthy ] && break',
+                '  [ "$STATUS" = unhealthy ] && exit 1',
+                '  sleep 5',
+                'done'
+            ].join('\n')
+        };
+
+        const devopsCdSnippet = {
+            label: 'WireGuard Deployment Path',
+            language: 'yaml',
+            code: [
+                '- name: Setup WireGuard',
+                '  run: |',
+                '    echo "${{ env.WIREGUARD_CONFIG }}" > wg0.conf',
+                '    sudo wg-quick up ./wg0.conf',
+                '',
+                '- name: Deploy Services',
+                '  uses: appleboy/ssh-action@v1.0.3',
+                '  with:',
+                '    script: |',
+                '      if [ "${{ github.ref_name }}" = "main" ]; then',
+                '        COMPOSE_FILE="docker-compose.prod.yml"',
+                '      else',
+                '        COMPOSE_FILE="docker-compose.dev.yml"',
+                '      fi'
+            ].join('\n')
+        };
+
+        const devopsPromotionSnippet = {
+            label: 'Digest-based Image Promotion',
+            language: 'yaml',
+            code: [
+                '- name: Get spring digest from sha tag',
+                '  run: |',
+                '    ref="${{ env.DOCKERHUB_REPO }}:upgrade-todo-backend-spring--sha-${{ github.sha }}"',
+                '    DIGEST=$(docker buildx imagetools inspect "$ref" --raw | jq -r ".manifests[0].digest // .digest")',
+                '',
+                '- name: Retag spring to target',
+                '  run: |',
+                '    docker buildx imagetools create -t "${{ env.DOCKERHUB_REPO }}:upgrade-todo-backend-spring--${{ steps.tgt.outputs.TAG_SUFFIX }}" "${{ env.DOCKERHUB_REPO }}@${{ steps.be.outputs.DIGEST }}"'
+            ].join('\n')
+        };
+
+        const devopsComposeSnippet = {
+            label: 'Compose Runtime Topology',
+            language: 'yaml',
+            code: [
+                'services:',
+                '  nginx:',
+                '    depends_on:',
+                '      spring:',
+                '        condition: service_healthy',
+                '      fastapi:',
+                '        condition: service_healthy',
+                '  spring:',
+                '    depends_on:',
+                '      redis:',
+                '        condition: service_healthy',
+                '      postgres:',
+                '        condition: service_healthy',
+                '      rabbitmq:',
+                '        condition: service_healthy'
+            ].join('\n')
+        };
+
+        const devopsBuildSnippet = {
+            label: 'Build and Push Matrix',
+            language: 'yaml',
+            code: [
+                '- name: Build and push spring image',
+                '  uses: docker/build-push-action@v5',
+                '  with:',
+                '    context: ./backend/bk-spring-dev',
+                '    tags: |',
+                '      ${{ env.DOCKERHUB_REPO }}:upgrade-todo-backend-spring--sha-${{ github.sha }}',
+                '      ${{ env.DOCKERHUB_REPO }}:upgrade-todo-backend-spring--dev',
+                '    cache-from: type=gha',
+                '    cache-to: type=gha,mode=min'
+            ].join('\n')
+        };
+
+        const devopsNginxSnippet = {
+            label: 'Nginx Runtime Validation Entry',
+            language: 'bash',
+            code: [
+                'main() {',
+                '  init_environment',
+                '  setup_cors_config',
+                '  setup_spring_proxy',
+                '  setup_fastapi_proxy',
+                '  setup_runtime_config',
+                '  setup_nginx_config',
+                '  validate_all_configs',
+                '  exec nginx -g "daemon off;"',
+                '}'
+            ].join('\n')
+        };
+
+        const devopsEdgeSnippet = {
+            label: 'Edge Security Provisioning',
+            language: 'bash',
+            code: [
+                'echo "${{ env.WIREGUARD_CONFIG }}" > wg0.conf',
+                'sudo wg-quick up ./wg0.conf',
+                '',
+                'printf "dns_cloudflare_api_token = %s\\n" "${CLOUD_FARE_TOKEN}" > certbot/cloudflare.ini',
+                'sudo chmod 640 certbot/cloudflare.ini',
+                '',
+                'printf "daemon=300\\nuse=web, web=https://api.ipify.org\\nssl=yes\\nprotocol=cloudflare\\n..." > ddclient/config/ddclient.conf'
+            ].join('\n')
+        };
+
+        const devopsObsSnippet = {
+            label: 'Prometheus + Alertmanager Pipeline',
+            language: 'yaml',
+            code: [
+                'scrape_configs:',
+                '  - job_name: "spring"',
+                '    metrics_path: /actuator/prometheus',
+                '    static_configs:',
+                '      - targets: ["spring:8080"]',
+                '  - job_name: "fastapi"',
+                '    metrics_path: /metrics',
+                '    static_configs:',
+                '      - targets: ["fastapi:8000"]',
+                '',
+                'receivers:',
+                '  - name: "slack-notification"',
+                '    slack_configs:',
+                '      - api_url_file: "/run/secrets/slack_webhook_url"'
+            ].join('\n')
+        };
+
+        const devopsK6Snippet = {
+            label: 'k6 Shared Profiles and Thresholds',
+            language: 'javascript',
+            code: [
+                'export const BASE_URL = __ENV.BASE_URL || "https://www.lifenavigation.store";',
+                'export const BASE_API_URL = `${BASE_URL}${API_PREFIX}`;',
+                '',
+                'stress: {',
+                '  executor: "ramping-vus",',
+                '  stages: [',
+                '    { duration: "2m", target: 100 },',
+                '    { duration: "3m", target: 200 },',
+                '    { duration: "3m", target: 300 },',
+                '  ],',
+                '},',
+                '',
+                'export const thresholds = {',
+                '  http_req_duration: ["p(95)<500", "p(99)<1000"],',
+                '  http_req_failed: ["rate<0.01"],',
+                '};'
+            ].join('\n')
+        };
+
+        const devopsStressSnippet = {
+            label: 'Stress Mode On/Down Lifecycle',
+            language: 'yaml',
+            code: [
+                'name: StressTestMode - On',
+                'on:',
+                '  workflow_dispatch:',
+                'steps:',
+                '  - name: Setup WireGuard',
+                '  - name: Switch databases to stress-test stack',
+                '    script: |',
+                '      cp .env.dev .env.stress',
+                '      docker compose --env-file .env.stress -f docker-compose.database-test.yml -f docker-compose.dev.yml -f docker-compose.monitoring.yml up -d',
+                '',
+                'name: StressTestMode - Down',
+                'steps:',
+                '  - name: Restore standard database stack',
+                '    script: |',
+                '      docker compose --env-file "$BASE_ENV_FILE" -f docker-compose.database.yml -f docker-compose.dev.yml -f docker-compose.monitoring.yml up -d'
+            ].join('\n')
+        };
+
+        const devopsTroubleSnippet = {
+            label: 'Troubleshooting Artifact Trail',
+            language: 'text',
+            code: [
+                'docs/DEV/NginX/troubleShooting/2026-01-18-oauth2-redirect-uri-troubleshooting.md',
+                'docs/DEV/k6/troubleShooting/2025-12-20-k6-summary-rounding-issue.md',
+                'docs/DEV/k6/troubleShooting/2026-01-10-high-vu-system-freeze-troubleshooting.md',
+                '',
+                'Pattern: incident -> root-cause note -> config/workflow patch -> regression checklist'
+            ].join('\n')
+        };
+
+        const getSnippet = (id) => {
+            if (id.startsWith('backend-spring-')) {
+                if (id.includes('auth')) return springAuthSnippet;
+                if (id.includes('domain-rules') || id.includes('state-management')) return springDomainSnippet;
+                if (id.includes('api-write')) return springApiWriteSnippet;
+                if (id.includes('worker-consume')) return springWorkerSnippet;
+                if (id.includes('troubleshooting')) return springTroubleSnippet;
+                return springHexSnippet;
+            }
+
+            if (id.startsWith('backend-fastapi-')) {
+                if (id.includes('auth')) return fastapiAuthSnippet;
+                if (id.includes('packages')) return fastapiPackageSnippet;
+                if (id.includes('domain-rules')) return fastapiDomainSnippet;
+                if (id.includes('state-management')) return fastapiStateSnippet;
+                if (id.includes('feedback')) return fastapiFeedbackSnippet;
+                if (id.includes('troubleshooting')) return fastapiTroubleSnippet;
+                return fastapiAnalyzeSnippet;
+            }
+
+            if (id.startsWith('frontend-')) {
+                if (id.includes('api-bridge')) return frontendApiBridgeSnippet;
+                if (id.includes('package-map')) return frontendPackageSnippet;
+                if (id.includes('rtk-single-source')) return frontendRtkSnippet;
+                if (id.includes('di-composition')) return frontendDiSnippet;
+                if (id.includes('troubleshooting')) return frontendTroubleSnippet;
+                return frontendMonorepoSnippet;
+            }
+
+            if (id.startsWith('devops-')) {
+                if (id.includes('change-detection')) return devopsChangeSnippet;
+                if (id.includes('integration-gate')) return devopsIntegrationSnippet;
+                if (id.includes('cd-wireguard')) return devopsCdSnippet;
+                if (id.includes('image-promotion')) return devopsPromotionSnippet;
+                if (id.includes('compose-topology')) return devopsComposeSnippet;
+                if (id.includes('docker-build-map')) return devopsBuildSnippet;
+                if (id.includes('nginx-runtime-validation')) return devopsNginxSnippet;
+                if (id.includes('edge-security')) return devopsEdgeSnippet;
+                if (id.includes('observability-pipeline')) return devopsObsSnippet;
+                if (id.includes('k6-load-architecture')) return devopsK6Snippet;
+                if (id.includes('stress-mode-lifecycle')) return devopsStressSnippet;
+                if (id.includes('troubleshooting')) return devopsTroubleSnippet;
+                return devopsComposeSnippet;
+            }
+
+            return {
+                label: 'Implementation Pointer',
+                language: 'text',
+                code: 'refer: private implementation source'
+            };
+        };
+
+        const assessmentMap = {
+            'backend-spring-troubleshooting': { status: 'partial', text: 'Troubleshooting tracks are linked with config/runtime patches. Continue adding benchmark deltas per issue for stricter before/after traceability.' },
+            'backend-fastapi-troubleshooting': { status: 'partial', text: 'Failure-handling branches are implemented and documented. Additional production incident samples can further strengthen scenario coverage.' },
+            'frontend-troubleshooting-patterns': { status: 'partial', text: 'Rollback and cache-sync patterns are encoded in RTK handlers. Keep incident notes synchronized with the final patched function signature.' },
+            'devops-troubleshooting-patterns': { status: 'partial', text: 'Operational runbooks are organized and linked. Add latest postmortem timestamps if new incidents occur.' }
+        };
+
+        const defaultAssessment = { status: 'ok', text: 'Aligned: README claim is matched against code paths and validated implementation snippet from upgrade_todo sources.' };
+
+        const serviceSections = Array.isArray(templateConfig?.serviceSections) ? templateConfig.serviceSections : [];
+        const seen = new Set();
+        const cards = [];
+
+        serviceSections.forEach((section) => {
+            const groups = Array.isArray(section?.groups) && section.groups.length > 0
+                ? section.groups
+                : [{ cards: section?.cards ?? [] }];
+
+            groups.forEach((group) => {
+                const groupCards = Array.isArray(group?.cards) ? group.cards : [];
+                groupCards.forEach((card) => {
+                    const id = String(card?.mermaidId ?? '').trim();
+                    if (!id || seen.has(id)) {
+                        return;
+                    }
+                    seen.add(id);
+                    cards.push({
+                        id,
+                        title: card?.title ?? id,
+                        description: card?.description ?? '',
+                        readme: learnMoreLinks[id] ?? '#'
+                    });
+                });
+            });
+        });
+
+        cards.forEach((card, index) => {
+            const navLink = document.createElement('a');
+            navLink.className = 'index-link';
+            navLink.href = `#${card.id}`;
+            navLink.textContent = `${index + 1}. ${card.title}`;
+            nav.appendChild(navLink);
+
+            const panel = document.createElement('section');
+            panel.id = card.id;
+            panel.className = 'panel';
+
+            const badge = document.createElement('span');
+            badge.className = 'badge';
+            badge.textContent = badgeFromId(card.id);
+
+            const heading = document.createElement('h2');
+            heading.textContent = card.title;
+
+            const summary = document.createElement('p');
+            summary.className = 'case-summary';
+            summary.textContent = card.description || 'Card evidence summary';
+
+            const readmeHeader = document.createElement('h3');
+            readmeHeader.textContent = 'README Source';
+            const readmeList = document.createElement('ul');
+            const readmeItem = document.createElement('li');
+            const readmeLink = document.createElement('a');
+            readmeLink.className = 'readme-source-link';
+            readmeLink.href = card.readme;
+            readmeLink.target = '_blank';
+            readmeLink.rel = 'noopener noreferrer';
+            readmeLink.textContent = card.readme;
+            readmeItem.appendChild(readmeLink);
+            readmeList.appendChild(readmeItem);
+
+            const codeHeader = document.createElement('h3');
+            codeHeader.textContent = 'Code Evidence';
+            const codeList = document.createElement('ul');
+            const codePaths = getCodePaths(card.id);
+
+            codePaths.forEach((path) => {
+                const item = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = card.readme;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.textContent = toFileName(path);
+                link.title = `private source path: ${path}`;
+                link.setAttribute('aria-label', `Open readme source for ${path}`);
+                item.appendChild(link);
+                codeList.appendChild(item);
+            });
+
+            const snippetHeader = document.createElement('h3');
+            snippetHeader.textContent = 'Code Snippet';
+            const snippet = getSnippet(card.id);
+
+            const snippetBlock = document.createElement('div');
+            snippetBlock.className = 'code-snippet';
+
+            const snippetLabel = document.createElement('span');
+            snippetLabel.className = 'code-snippet-label';
+            snippetLabel.textContent = snippet.label || 'Key Implementation';
+
+            const pre = document.createElement('pre');
+            const code = document.createElement('code');
+            code.className = `language-${snippet.language || 'text'}`;
+            code.textContent = snippet.code || '';
+            pre.appendChild(code);
+            snippetBlock.append(snippetLabel, pre);
+
+            const assessmentHeader = document.createElement('h3');
+            assessmentHeader.textContent = 'Assessment';
+            const assessment = assessmentMap[card.id] || defaultAssessment;
+            const assessmentText = document.createElement('p');
+            assessmentText.className = assessment.status;
+            assessmentText.textContent = assessment.text;
+
+            panel.append(
+                badge,
+                heading,
+                summary,
+                readmeHeader,
+                readmeList,
+                codeHeader,
+                codeList,
+                snippetHeader,
+                snippetBlock,
+                assessmentHeader,
+                assessmentText
+            );
+
+            evidenceGrid.appendChild(panel);
+        });
+
+        if (window.hljs) {
+            document.querySelectorAll('pre code').forEach((el) => window.hljs.highlightElement(el));
+        }
+    </script>
+</body>
+
+</html>
