@@ -167,9 +167,9 @@ body.modal-open {
 }
 
 #service-sections {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 2rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
 }
 
 #service-sections > .service-section,
@@ -308,6 +308,18 @@ body.modal-open {
     gap: 1.1rem;
 }
 
+.service-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.service-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
 .section-header {
     margin-top: 0.3rem;
 }
@@ -323,6 +335,10 @@ body.modal-open {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.2rem;
+}
+
+.service-grid > * {
+    min-width: 0;
 }
 
 .group-divider {
@@ -376,6 +392,7 @@ body.modal-open {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     overflow: hidden;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     scroll-margin-top: 76px;
@@ -403,11 +420,13 @@ body.modal-open {
     flex-direction: column;
     gap: 0.72rem;
     flex: 1;
+    min-width: 0;
 }
 
 .card-title {
     font-size: 1.05rem;
     font-weight: 600;
+    overflow-wrap: anywhere;
 }
 
 .card-subtitle {
@@ -421,11 +440,13 @@ body.modal-open {
     font-size: 0.9rem;
     color: var(--text-secondary);
     line-height: 1.55;
+    overflow-wrap: anywhere;
 }
 
 .card-meta-line {
     display: flex;
     align-items: baseline;
+    flex-wrap: wrap;
     gap: 0.45rem;
     font-size: 0.8rem;
     line-height: 1.45;
@@ -440,6 +461,9 @@ body.modal-open {
 
 .meta-value {
     color: var(--text-primary);
+    min-width: 0;
+    flex: 1;
+    overflow-wrap: anywhere;
 }
 
 .card-tags {
@@ -567,6 +591,7 @@ body.modal-open {
 .mermaid {
     width: 100%;
     height: 100%;
+    min-width: 0;
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -748,17 +773,16 @@ body.modal-open {
     .skill-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-
-    #service-sections,
-    .top-panels {
-        grid-template-columns: 1fr;
-    }
 }
 
 @media (max-width: 768px) {
     .dashboard-grid {
         padding: 1rem;
         gap: 2rem;
+    }
+
+    .top-panels {
+        grid-template-columns: 1fr;
     }
 
     #about {

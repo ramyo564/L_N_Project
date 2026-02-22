@@ -403,6 +403,7 @@ function createServiceCard(card, sectionConfig) {
     description.className = 'card-desc';
     description.textContent = card.overview ?? card.description ?? '';
 
+    const whyLine = createMetaLine('WHY', card.why);
     const roleLine = createMetaLine('ROLE', card.role);
     const stackLine = createMetaLine('STACK', card.stackSummary);
     const tags = createTagList(card.skills);
@@ -414,6 +415,9 @@ function createServiceCard(card, sectionConfig) {
         content.append(subtitle);
     }
     content.append(description);
+    if (whyLine) {
+        content.append(whyLine);
+    }
     if (roleLine) {
         content.append(roleLine);
     }
@@ -453,25 +457,34 @@ function renderServiceSections() {
         heading.textContent = sectionConfig.title ?? 'SERVICES';
         header.appendChild(heading);
 
-        const grid = document.createElement('div');
-        grid.className = 'service-grid';
+        const groupsContainer = document.createElement('div');
+        groupsContainer.className = 'service-groups';
 
         const groups = Array.isArray(sectionConfig.groups) && sectionConfig.groups.length > 0
             ? sectionConfig.groups
             : [{ title: '', desc: '', cards: sectionConfig.cards ?? [] }];
 
         groups.forEach((group) => {
+            const groupSection = document.createElement('div');
+            groupSection.className = 'service-group';
+
             if (group.title || group.desc) {
-                grid.appendChild(createGroupDivider(group, sectionConfig.theme));
+                groupSection.appendChild(createGroupDivider(group, sectionConfig.theme));
             }
+
+            const groupGrid = document.createElement('div');
+            groupGrid.className = 'service-grid';
 
             const cards = Array.isArray(group.cards) ? group.cards : [];
             cards.forEach((card) => {
-                grid.appendChild(createServiceCard(card, sectionConfig));
+                groupGrid.appendChild(createServiceCard(card, sectionConfig));
             });
+
+            groupSection.appendChild(groupGrid);
+            groupsContainer.appendChild(groupSection);
         });
 
-        sectionWrapper.append(header, grid);
+        sectionWrapper.append(header, groupsContainer);
         container.appendChild(sectionWrapper);
     });
 }
@@ -1042,9 +1055,9 @@ function setupMermaidModal() {
 document.addEventListener('DOMContentLoaded', async () => {
     setSystemInfo();
     renderHero();
-    renderServiceSections();
     renderTopPanels();
     renderSkills();
+    renderServiceSections();
     renderContact();
     renderNavigation();
     setupUptime();

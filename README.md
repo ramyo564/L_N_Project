@@ -11,13 +11,10 @@
 
 ---
 
-## ⚡ TL;DR (1분 요약)
-- 실제 운영 중 발생한 성능 병목과 비용 문제를 **재현 가능한 부하 테스트**로 검증하며 해결한 웹 서비스
-- **실패한 Todo를 원인-패턴으로 구조화해 다음 행동을 재설계하는 서비스**
-- 캐시 / 비동기 / 아키텍처 전환을 통해 p95 지연 **최대 86% 개선**
-- 운영 중 발생한 **문제를 줄이기 위한 설계 판단**과 구현 과정
-- 1인 개발 환경에서, **협업 가능성을 염두에 두고 역할을 분리해 구현**
-- 세부 아키텍처와 구현 근거는 필요 시 참고하시면 됩니다.
+## ⚡ 30초 스캔 핵심 3포인트
+- 문제: 운영 환경에서 읽기/쓰기 지연이 누적됨 -> 선택: WebFlux 혼합 제거 후 MVC + API/Worker 분리 -> 결과: 읽기 p95 975ms -> 141ms, 쓰기 p95 1.9s -> 126ms.
+- 문제: 읽기 집중 트래픽에서 DB 커넥션 병목 발생 -> 선택: Redis Cache-Aside + `@Cacheable` 우선 실행으로 트랜잭션 경계 조정 -> 결과: READ RPS 972 -> 3,680(+279%).
+- 문제: 동기 저장 경로에서 응답 지연과 실패 전파 위험 -> 선택: Redis Pending + RabbitMQ + Worker + Retry/DLQ -> 결과: WRITE RPS 373 -> 916(+146%), 정합성 복구 경로 확보.
 
 ---
 
@@ -77,10 +74,9 @@
 ### 🛠️ 핵심 기술 하이라이트 (Engineering Pillars)
 
 #### ⚙️ [Backend](./Backend/README.md): "운영 문제 해결 기반 아키텍처 결정"
-- 초기 WebFlux 도입 후 운영 복잡도 문제로 **MVC + Virtual Threads로 전환**
-- DDD + Hexagonal Architecture로 **유지보수 부담을 줄이기 위한 구조 설계**
-- **Transactional Outbox 패턴**으로 데이터 정합성 보장
-- 단계적 성능 개선으로 **읽기 RPS +279%, 쓰기 RPS +146%** 달성
+- 문제: WebFlux+MVC 혼합으로 운영 복잡도와 컨텍스트 전파 비용 증가 -> 선택: MVC 중심 구조 + API/Worker 역할 분리 -> 결과: 읽기 p95 975ms -> 141ms.
+- 문제: 읽기/쓰기 부하가 단일 동기 경로에 집중 -> 선택: Redis 캐시 경계 최적화와 RabbitMQ 비동기 파이프라인 적용 -> 결과: READ RPS +279%, WRITE p95 1.9s -> 126ms.
+- 문제: 기능 확장 시 도메인 결합도 상승 위험 -> 선택: DDD + Hexagonal + 필요한 경계에 Outbox 적용 -> 결과: 변경 영향 범위 축소와 정합성 보강.
 - 👉 [Backend 상세 보기](./Backend/README.md)
 
 #### 🎨 [Frontend](./Frontend/README.md): "실제 사용 흐름 재현을 위한 구현"
@@ -92,9 +88,9 @@
 - **빌드 효율성 확보**: Turborepo 빌드 시간 **82% 단축**
 - 👉 [Frontend 상세 보기](./Frontend/README.md)
 
-#### 🚀 [DevOps](./Dev/README.md): "비용 0원의 고효율 인프라"
-- **이미지 96% 경량화**: ML 라이브러리 분리 및 멀티스테이지 빌드로 **26GB → 1GB** 절감
-- **빌드 속도 90% 단축**: 레이어 캐싱 및 .dockerignore 최적화로 **1004초 → 98초** 단축
+#### 🚀 [DevOps](./Dev/README.md): "비용 효율 + 운영 안정화 인프라"
+- **FastAPI ML 런타임 설치 제거**: Docker 빌드 단계 Pre-baking으로 첫 요청 타임아웃/OOM 리스크 완화
+- **이미지 대폭 경량화**: GPU 의존성 제거 + CPU 전용 제약으로 이미지 용량을 실운영 가능한 수준으로 축소
 - **철저한 보안망**: **WireGuard VPN** 전용 SSH 및 **Cloudflare Tunnel**로 공인 IP 완전 은폐
 
 > **0원 운영의 리스크 대응**:
@@ -119,10 +115,10 @@
 
 ## 🚀 문제 해결 과정에서의 기술 선택
 
-### 1. WebFlux → Spring MVC + Virtual Threads
+### 1. WebFlux → Spring MVC + API/Worker 분리 운영
 > **비동기 모델이 항상 성능을 보장하지 않는다는 점을 운영 환경에서 검증**
 - **문제**: WebFlux + SecurityContext 전파 오버헤드로 순수 MVC보다 느림
-- **결정**: MVC + Virtual Thread로 전환 → I/O 대기 시간 효율화
+- **결정**: MVC 기반으로 전환하고 API/Worker 역할을 분리, Rabbit 발행은 Platform Executor 중심으로 안정화
 - **결과**: 읽기 p95 **975ms → 141ms** (-86%)
 
 ### 2. Redis 캐싱 + @Cacheable 순서 최적화
@@ -166,9 +162,9 @@
 
 현재 서비스는 PostgreSQL + Redis 기반으로 운영되고 있습니다.
 
-- **트랜잭션 정합성**과 관계성이 중요한 데이터는 RDB에 저장
-- **읽기 빈도가 높은 데이터**는 Redis 캐시 계층으로 분리
-- **비동기 처리**(RabbitMQ)를 통해 쓰기 부하를 분산
+- **트랜잭션 정합성**이 중요한 핵심 데이터는 PostgreSQL에 저장해 도메인 무결성을 유지합니다.
+- **읽기 병목 구간**은 Redis Cache-Aside와 `@Cacheable` 선행 경계로 분리해 DB 커넥션 점유를 줄이고, READ p95 975ms -> 141ms를 달성했습니다.
+- **쓰기 병목/정합성 리스크 구간**은 Redis Pending + RabbitMQ + Worker + Retry/DLQ로 분리해 WRITE p95 1.9s -> 126ms 개선과 실패 복구 경로를 확보했습니다.
 
 향후 데이터 특성에 따른 저장소 최적화가 가능한 구조로 설계되었습니다.
 

@@ -4,6 +4,11 @@
 
 📅 **개발 기간**: 2025.04 ~ 현재 (개인 프로젝트)
 
+## ⚡ 30초 스캔 핵심 3포인트
+- 문제: 운영 트래픽에서 API 응답 지연이 누적됨 -> 선택: WebFlux 혼합 제거 후 MVC + API/Worker 분리 -> 결과: 읽기 p95 975ms -> 141ms, 쓰기 p95 1.9s -> 126ms.
+- 문제: 읽기 중심 워크로드에서 DB 커넥션 점유가 병목 -> 선택: Redis Cache-Aside + `@Cacheable` 선행 경계 적용 -> 결과: READ RPS 972 -> 3,680(+279%).
+- 문제: 동기 저장 경로에서 지연과 정합성 리스크 발생 -> 선택: Redis Pending + RabbitMQ + Retry/DLQ -> 결과: WRITE RPS 373 -> 916(+146%), 실패 복구 경로 확보.
+
 ### 🚀 핵심 성과 (500 VU 기준)
 | 지표 | 초창기 → 개선 후 | 개선율 |
 |------|-----------------|--------|
@@ -18,7 +23,7 @@
 
 ![Java](https://img.shields.io/badge/Java-21-blue?logo=openjdk) ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen?logo=springboot) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?logo=postgresql) ![Redis](https://img.shields.io/badge/Redis-Cache-dc382d?logo=redis) ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-AMQP-ff6600?logo=rabbitmq) ![Gradle](https://img.shields.io/badge/Build-Gradle-02303a?logo=gradle)
 
-![Virtual Threads](https://img.shields.io/badge/Virtual%20Threads-enabled-6db33f) ![DDD](https://img.shields.io/badge/DDD-Hexagonal-blueviolet)
+![Virtual Threads](https://img.shields.io/badge/Virtual%20Threads-API%20off%20%7C%20Worker%20on-6db33f) ![DDD](https://img.shields.io/badge/DDD-Hexagonal-blueviolet)
 
 **FastAPI AI Service**
 
@@ -193,7 +198,7 @@ sequenceDiagram
         Note over U,AI: 1단계: 실패 분석 요청
         U->>F: TODO 실패 이유 입력
         F->>AI: POST /api/v1/ai/analyze/failure
-        AI->>AI: JWT 검증 (Spring 연동 or 로컬)
+        AI->>S: JWT 검증 요청 (Spring verify API 단일 경로)
         AI->>AI: 분석 세션 생성 (Redis 캐시)
         AI->>AI: 프롬프트 템플릿 구성
         AI->>LLM: 실패 원인 분류 요청 (classify)
@@ -228,7 +233,7 @@ sequenceDiagram
 
 <a id="lm-backend-fastapi-troubleshooting"></a>
 **운영 장애 대응 패턴**:
-- Spring verify timeout/실패 시 로컬 검증 폴백 경로를 유지해 전체 AI 플로우 중단을 방지합니다.
+- Spring verify API 단일 경로로 JWT를 검증하며, verify URL 미설정은 503/timeout은 504로 반환해 장애 원인을 명확히 분리합니다.
 - 추천 파싱 실패, 세션 만료, 인덱스 범위 오류를 개별 분기로 처리해 잘못된 요청이 후속 생성 단계로 전파되지 않도록 방어합니다.
 
 <details>
@@ -236,7 +241,7 @@ sequenceDiagram
 
 - **FastAPI**: `/api/v1/ai/*` 전용 엔드포인트
 - **Qdrant**: 임베딩 벡터 저장 및 유사도 검색
-- **인증 연동**: Spring JWT 검증 또는 로컬 검증 선택 가능
+- **인증 연동**: Spring verify API 의존 단일 경로 (`spring_verify_url` 필수, 로컬 JWT 폴백 미구현)
 - **ML 모델 캐시**: Docker 볼륨으로 모델 재다운로드 방지
 
 </details>
@@ -303,7 +308,7 @@ graph TD
 - **Hexagonal Architecture**: 포트와 어댑터 패턴을 통해 비즈니스 로직과 인프라(DB, Web, MQ)를 분리
 - **CQRS**: 명령(Command)과 조회(Query) 모델 분리 (Redis 캐싱 적극 활용)
 - **Event-Driven**: RabbitMQ를 활용한 도메인 이벤트 발행 및 비동기 처리
-- **Virtual Threads**: Spring MVC + Virtual Thread 조합으로 높은 처리량 달성
+- **Virtual Threads 운영 모델**: API 서버는 OFF, Worker 서버는 ON으로 분리해 I/O 특성에 맞춰 처리량과 커넥션 경합을 조정
 
 <a id="lm-backend-spring-domain-rules"></a>
 <a id="lm-backend-spring-state-management"></a>
@@ -684,13 +689,9 @@ sequenceDiagram
     participant S as Spring Auth
 
     F->>FA: POST /api/v1/ai/* (Bearer Token)
-    alt SPRING_VERIFY_URL 설정됨
-        FA->>S: 토큰 검증 요청
-        S-->>FA: 검증 결과
-    else 로컬 검증
-        FA->>FA: JWT_SECRET으로 검증
-    end
-    FA-->>F: AI 응답
+    FA->>S: 토큰 검증 요청 (spring_verify_url)
+    S-->>FA: 검증 결과 (성공/실패)
+    FA-->>F: AI 응답 또는 인증 오류
 ```
 
 ---
@@ -700,11 +701,11 @@ sequenceDiagram
 ### Spring Boot
 | 기술 | 상세 | 용도 | 선택 이유 |
 |:---|:---|:---|:---|
-| **Language** | Java 21 | Virtual Thread 활용 | I/O 대기 시간 CPU 활용 |
+| **Language** | Java 21 | API/Worker 스레드 모델 분리 | API(VT OFF)/Worker(VT ON)로 I/O 특성별 운영 |
 | **Framework** | Spring Boot 3.x MVC | 백엔드 코어 | WebFlux 대비 코드 복잡도 ↓ |
 | **Database** | PostgreSQL 15 | 메인 데이터 저장소 | ACID + 멀티코어 최적화 |
-| **Cache** | Redis | 캐싱, 세션, Pending | 캐시/세션/상태 통합 관리 |
-| **Messaging** | RabbitMQ | 비동기 이벤트 처리 | Spring AMQP 통합 용이 |
+| **Cache** | Redis | 읽기 병목 완화 (Cache-Aside, Pending) | READ p95 975ms -> 141ms, READ RPS +279% 개선 근거 |
+| **Messaging** | RabbitMQ | 쓰기 지연/정합성 경계 분리 | WRITE p95 1.9s -> 126ms, Retry/DLQ 복구 경로 확보 |
 
 ### FastAPI
 | 기술 | 상세 | 용도 | 선택 이유 |
