@@ -20,6 +20,7 @@
 
 ## 1. 동시성 제어
 
+<a id="lm-backend-spring-api-write"></a>
 ### 1.1 Pending Cache (Race Condition 해결)
 
 **문제 상황**: 프로젝트 생성 후 즉시 Task 생성 시, 비동기 처리로 인해 프로젝트가 아직 DB에 없을 수 있음
@@ -251,6 +252,7 @@ private List<Task> persistNormalized(UUIDv7 projectId, List<Task> tasks) {
 
 ---
 
+<a id="lm-backend-spring-worker-consume"></a>
 ## 2. 비동기 처리 흐름 (API/Worker 분리)
 
 ### 아키텍처 개요
@@ -441,4 +443,3 @@ public void processOne(OutboxEventAuthEntity entity) {
 | 2-Phase Reorder | ✅ | ✅ | ✅ | - | - |
 | 비동기 처리 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | DLQ | ✅ | ✅ | ✅ | ✅ | ✅ |
-

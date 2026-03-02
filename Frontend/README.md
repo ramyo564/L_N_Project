@@ -461,6 +461,11 @@ graph TD
 
 **해결**: Custom Hooks 패턴 + Core 패키지 독립
 
+**DI Composition 기준**:
+- `CoreServicesProvider`에서 auth/signup/projects/taskDetail 계열 서비스를 한 지점에서 조립합니다.
+- 서비스 조립 책임을 Provider로 모아 화면 컴포넌트는 렌더링과 사용자 이벤트 처리에만 집중합니다.
+- 테스트 시 Provider 레벨에서 mock/usecase 교체가 가능하도록 의존성 경계를 분리합니다.
+
 <details>
 <summary>🔍 해결 과정 상세보기</summary>
 
@@ -476,7 +481,12 @@ graph TD
 ---
 
 <a id="lm-frontend-api-bridge"></a>
-### 4. API 통신 및 타입 안정성 확보
+### 4. API 통신 브리지 및 타입 안정성 확보
+
+**Auth & API Bridge 전략**:
+- Spring API는 `fetchBaseQuery` + reauth 경로를 사용해 토큰 재발급과 표준 API 흐름을 처리합니다.
+- FastAPI AI API는 `fakeBaseQuery` + `queryFn` 기반으로 분기 에러 처리와 세션성 응답을 제어합니다.
+- 두 백엔드의 인증 실패 패턴이 달라 경로를 분리하고, 타입은 OpenAPI codegen으로 동기화합니다.
 
 | 항목 | Before | After | 개선 |
 |------|--------|-------|------|

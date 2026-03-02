@@ -5,6 +5,7 @@
 
 ---
 
+<a id="lm-backend-spring-state-management"></a>
 ## 1. 📊 상태 전이 규칙 (State Transition Rules)
 
 ### 1.1 Task 상태 (TaskStatus)
@@ -81,6 +82,7 @@ public void toggleStatus() {
 
 ---
 
+<a id="lm-backend-spring-domain-rules"></a>
 ## 2. 🔐 권한 검증 규칙 (Authorization Rules)
 
 ### 2.1 프로젝트 소유권 검증
@@ -508,4 +510,3 @@ public void unlock() {
 | **2-Phase Reorder** | Unique Constraint 충돌 방지 |
 | **Value Objects** | 도메인 불변성과 자체 검증 |
 | **멱등성** | 삭제 작업의 안전한 재시도 |
-

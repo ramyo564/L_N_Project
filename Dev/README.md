@@ -76,12 +76,18 @@
 | 운영 | `prod` | PostgreSQL (prod) | 실제 서비스 |
 
 <a id="lm-devops-k6-load-architecture"></a>
+### k6 Load Architecture
+
+- 공통 auth/refresh/backoff 유틸과 프로파일(`fast_test`, `stress2000`, `spike`)을 공유해 테스트 재현성을 확보합니다.
+- 인증(Auth), 쓰기(Write), 읽기(Read) 시나리오를 분리 실행해 병목 구간을 기능 단위로 진단합니다.
+- CDN 바이패스 모드로 오리진 서버의 순수 처리 성능을 별도 측정합니다.
+
 <a id="lm-devops-stress-mode-lifecycle"></a>
-**Stress Test 프로세스**:
-- **격리된 환경 구축**: 운영 데이터에 영향을 주지 않도록 `stress` 전용 프로파일과 별도의 데이터베이스 인스턴스를 활용하여 테스트 환경을 자동 구성
-- **시나리오 기반 검증**: k6를 활용하여 인증(Auth), 쓰기(Write), 읽기(Read) 등 주요 유즈케이스별 부하 시나리오를 실행하고 지표를 수집
-- **CDN 바이패스(Bypass) 분석**: Cloudflare 등 외부 네트워크 레이어의 변수를 배제하고, 오리진 서버의 순수 처리 성능을 정교하게 측정하기 위해 직접 연결 방식의 부하 테스트를 병행
-- **단계적 부하 증가**: 500 VU에서 최대 2,000 VU까지 점진적으로 부하를 높이며 시스템의 임계 지점을 파악하고 성능 병목을 진단
+### Stress Mode Lifecycle
+
+- `stress` 전용 프로파일 + 별도 DB 인스턴스로 운영 데이터 오염 없이 테스트 환경을 구성합니다.
+- `StressTestMode - On/Refresh/Down` 워크플로우로 환경 전환과 복구를 자동화합니다.
+- 500 VU에서 최대 2,000 VU까지 단계적으로 부하를 올려 임계 지점을 추적합니다.
 
 </details>
 
@@ -322,7 +328,15 @@ certbot:
 ---
 
 <a id="lm-devops-troubleshooting-patterns"></a>
-### 7. Cloudflare Tunnel (Zero Trust 네트워크)
+### 7. Operational Troubleshooting Patterns
+
+**사고 유형과 대응 패턴**:
+- Cloudflare Tunnel protocol mismatch (`https://localhost:443`)로 인한 400/loop 문제를 `http://localhost:80` ingress 구성으로 교정
+- OAuth redirect proto 누락 이슈를 프록시 헤더/리다이렉트 경로 검증으로 교정
+- k6 summary 반올림으로 인한 지표 오해를 raw percentile 확인 절차로 보완
+- 고 VU(1k~2k) 구간 호스트 freeze를 리소스 가드/프로파일 분리로 완화
+
+#### 7-1. Cloudflare Tunnel (Zero Trust 네트워크)
 
 | 고민 | 결정 | 이유 |
 |------|------|------|
@@ -400,8 +414,7 @@ certbot:
 ---
 
 <a id="lm-devops-compose-topology"></a>
-<a id="lm-devops-observability-pipeline"></a>
-## 🏗️ 인프라 아키텍처
+## 🏗️ 인프라 아키텍처 (Compose Topology)
 
 홈서버 환경에서 보안과 안정성을 최우선으로 구성
 
@@ -485,6 +498,13 @@ graph LR
 | `docker-compose.dev.yml` / `prod.yml` | Nginx, Spring API/Worker, FastAPI |
 | `docker-compose.monitoring.yml` | Prometheus, Grafana, Loki, Alertmanager |
 
+<a id="lm-devops-observability-pipeline"></a>
+### Observability Pipeline
+
+- Prometheus가 Spring/FastAPI/exporter 메트릭을 수집하고 Grafana가 시각화합니다.
+- Loki를 로그 저장소로 사용해 메트릭-로그 상관 분석 경로를 통합합니다.
+- Alertmanager는 secret(`slack_webhook_url`) 기반 Slack receiver로 장애 알림을 전송합니다.
+
 - 그라파나 대시보드 모니터링 
 ![Grafana 대시보드 1](../img/grafana/read-2000/읽기_2000_그라파나_1.png)
 ![Grafana 대시보드 2](../img/grafana/read-2000/읽기_2000_그라파나_2.png)
@@ -555,8 +575,12 @@ graph TD
     NginxJob --> IntTest
 ```
 
+**통합 게이트 핵심 단계**:
+- `docker-compose.dev-CI.yml`로 의존 서비스와 앱을 함께 기동합니다.
+- 헬스체크 루프로 Spring/FastAPI/Nginx 상태를 검증해 비정상 상태를 fail-fast 처리합니다.
+- Trivy 스캔 결과를 게이트 조건에 포함해 취약점 검증 후에만 다음 단계로 진행합니다.
+
 <a id="lm-devops-cd-wireguard"></a>
-<a id="lm-devops-image-promotion"></a>
 ### Deploy Pipeline Flow (`deploy-via-wireguard.yml`)
 
 ```mermaid
@@ -571,6 +595,28 @@ sequenceDiagram
     GA->>HS: docker compose up -d
     HS->>HS: Health Check 대기
     GA->>VPN: VPN 해제 (always)
+```
+
+**핵심 단계**:
+- 배포 시작 시 WireGuard 터널을 열고, 배포 완료/실패 여부와 상관없이 `always` 단계에서 터널을 종료합니다.
+- 브랜치(`main`/`dev`)에 따라 compose/env를 분기 적용해 환경별 배포를 분리합니다.
+
+<a id="lm-devops-image-promotion"></a>
+### Image Promotion Flow (Digest-based)
+
+SHA 태그를 직접 재사용하지 않고 digest를 해석한 뒤 안정 태그로 승격해 배포 드리프트를 방지합니다.
+
+```yaml
+- name: Get spring digest from sha tag
+  run: |
+    ref="${{ env.DOCKERHUB_REPO }}:upgrade-todo-backend-spring--sha-${{ github.sha }}"
+    DIGEST=$(docker buildx imagetools inspect "$ref" --raw | jq -r ".manifests[0].digest // .digest")
+
+- name: Retag spring to target
+  run: |
+    docker buildx imagetools create \
+      -t "${{ env.DOCKERHUB_REPO }}:upgrade-todo-backend-spring--${{ steps.tgt.outputs.TAG_SUFFIX }}" \
+      "${{ env.DOCKERHUB_REPO }}@${{ steps.be.outputs.DIGEST }}"
 ```
 
 ---
@@ -708,7 +754,7 @@ graph TD
 
 ### 📌 중간 우선순위
 - [ ] **Terraform으로 인프라 코드화** - 수동 설정을 최소화하고 인프라 변경 이력을 코드로 관리 (IaC)
-- [ ] **모니터링 알림 고도화** - 장애 발생 시 즉각 대응을 위한 Slack/Discord 임계치 알림 연동
+- [ ] **모니터링 알림 고도화** - 현재 Slack 연동 기준으로 임계치/채널 라우팅(Discord 포함) 세분화
 
 ### 💡 장기 계획
 - [ ] Kubernetes 전환 - 서비스 규모 확장 시 오케스트레이션 고도화 (현재는 Docker Compose로 비용 효율적 운영 중)

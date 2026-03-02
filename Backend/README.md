@@ -181,8 +181,8 @@ graph LR
 | 향후 AI 고도화 | **컨텍스트 기반 분석 확장** | 데이터 축적 후 분석 품질 향상 고려 |
 
 <a id="lm-backend-fastapi-analyze"></a>
-<a id="lm-backend-fastapi-domain-rules"></a>
-<a id="lm-backend-fastapi-state-management"></a>
+### FastAPI Analyze Path
+
 **현재 AI 기능 요청 흐름**:
 
 ```mermaid
@@ -220,7 +220,23 @@ sequenceDiagram
     end
 ```
 
+<a id="lm-backend-fastapi-domain-rules"></a>
+### FastAPI Domain Rules
+
+- LLM 응답은 JSON 파싱 + fallback 정규화를 거쳐 잘못된 포맷이 추천 생성 경로로 전파되지 않도록 방어합니다.
+- 피드백 제출 시 세션 유효성, 선택 인덱스 범위, 추천-생성 매핑 무결성을 검증합니다.
+- 상세 규칙과 예외 분기는 `FailureAnalyzer`, `FeedbackService` 구현 기준으로 유지합니다.
+
+<a id="lm-backend-fastapi-state-management"></a>
+### FastAPI State Management
+
+- AI 세션은 `analyze -> feedback -> completed` 수명주기를 Redis에 저장하고 단계별 스냅샷을 갱신합니다.
+- 분석 결과(category/recommendations)와 피드백 메타데이터를 분리 저장해 재시도/오류 복구 시 일관성을 유지합니다.
+- 세션 만료/유효성 실패는 후속 task 생성 전에 차단합니다.
+
 <a id="lm-backend-fastapi-feedback"></a>
+### FastAPI Feedback Path
+
 **핵심 구현 포인트**:
 | 단계 | 구현 | 설명 |
 |------|------|------|
@@ -232,6 +248,8 @@ sequenceDiagram
 **기술 선택**: Python 생태계 (LangChain, Sentence-Transformers) + Qdrant 벡터 DB
 
 <a id="lm-backend-fastapi-troubleshooting"></a>
+### FastAPI Troubleshooting
+
 **운영 장애 대응 패턴**:
 - Spring verify API 단일 경로로 JWT를 검증하며, verify URL 미설정은 503/timeout은 504로 반환해 장애 원인을 명확히 분리합니다.
 - 추천 파싱 실패, 세션 만료, 인덱스 범위 오류를 개별 분기로 처리해 잘못된 요청이 후속 생성 단계로 전파되지 않도록 방어합니다.
@@ -311,7 +329,19 @@ graph TD
 - **Virtual Threads 운영 모델**: API 서버는 OFF, Worker 서버는 ON으로 분리해 I/O 특성에 맞춰 처리량과 커넥션 경합을 조정
 
 <a id="lm-backend-spring-domain-rules"></a>
+### Spring Domain Rules
+
+- `ProjectAccessVerifier`에서 Pending Cache 우선 확인 후 소유권 DB 검증으로 접근 권한을 판별합니다.
+- 삭제 엔티티 상태 전이 차단, reorder 중복 ID 차단, 삭제 요청 멱등 처리 규칙을 도메인 경계에서 강제합니다.
+- 상세 규칙은 [BusinessRules.md](./BusinessRules.md), 동시성 경계는 [ConcurrencyControl.md](./ConcurrencyControl.md)에서 추적합니다.
+
 <a id="lm-backend-spring-state-management"></a>
+### Spring State Management
+
+- Task/Project/SubTask 상태 전이는 도메인 모델 내부에서만 수행해 불변 조건을 고정합니다.
+- `DONE` 전이 시 `completedAt` 설정, 비완료 전이 시 `completedAt` 해제 규칙을 일관 적용합니다.
+- 삭제된 엔티티의 상태 변경은 예외 처리로 차단합니다.
+
 > 💡 **비즈니스 규칙 분석**: 상태 전이, 권한 검증, Race Condition 해결, 멱등성 처리 등 CRUD 이상의 도메인 규칙은 [BusinessRules.md](./BusinessRules.md) 참조
 
 > 📋 **마이그레이션 가이드**: Flyway 기반 무중단 배포 전략, Partial Index/Composite Index 최적화, 스키마 변경 설계 원칙은 [MigrationGuide.md](./MigrationGuide.md) 참조
