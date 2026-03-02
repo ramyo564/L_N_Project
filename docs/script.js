@@ -46,6 +46,87 @@ function setText(id, value) {
     }
 }
 
+function pushDataLayerEvent(eventName, payload = {}) {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+        event: eventName,
+        tracking_version: '2026-03-ui-click-v1',
+        page_path: window.location.pathname,
+        page_title: document.title,
+        ...payload
+    });
+}
+
+function trackUiClick(payload = {}) {
+    pushDataLayerEvent('ui_click', payload);
+}
+
+function setTrackData(element, payload = {}) {
+    if (!(element instanceof HTMLElement)) {
+        return;
+    }
+    element.dataset.trackClick = 'true';
+    element.dataset.trackArea = payload.area ?? 'unknown';
+    element.dataset.trackComponent = payload.component ?? 'element';
+    element.dataset.trackLabel = payload.label ?? element.textContent?.trim() ?? 'unknown';
+    element.dataset.trackAction = payload.action ?? 'click';
+    element.dataset.trackDestination = payload.destination ?? '';
+    element.dataset.trackCardId = payload.cardId ?? '';
+    element.dataset.trackCardTitle = payload.cardTitle ?? '';
+    element.dataset.trackSectionId = payload.sectionId ?? '';
+}
+
+function trackElementInteraction(element, interaction = 'mouse') {
+    if (!(element instanceof HTMLElement)) {
+        return;
+    }
+    if (element.dataset.trackClick !== 'true') {
+        return;
+    }
+
+    trackUiClick({
+        ui_area: element.dataset.trackArea || 'unknown',
+        ui_component: element.dataset.trackComponent || 'element',
+        ui_label: element.dataset.trackLabel || 'unknown',
+        ui_action: element.dataset.trackAction || 'click',
+        ui_destination: element.dataset.trackDestination || '',
+        ui_card_id: element.dataset.trackCardId || '',
+        ui_card_title: element.dataset.trackCardTitle || '',
+        ui_section_id: element.dataset.trackSectionId || '',
+        ui_interaction: interaction
+    });
+}
+
+function setupInteractionTracking() {
+    document.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) {
+            return;
+        }
+        const tracked = target.closest('[data-track-click="true"]');
+        if (!tracked) {
+            return;
+        }
+        const interaction = event.detail === 0 ? 'keyboard' : 'mouse';
+        trackElementInteraction(tracked, interaction);
+    });
+
+    document.addEventListener('auxclick', (event) => {
+        if (event.button !== 1) {
+            return;
+        }
+        const target = event.target;
+        if (!(target instanceof Element)) {
+            return;
+        }
+        const tracked = target.closest('[data-track-click="true"]');
+        if (!tracked) {
+            return;
+        }
+        trackElementInteraction(tracked, 'auxclick');
+    });
+}
+
 function setupUptime() {
     const uptimeElement = byId('uptime');
     if (!uptimeElement) {
@@ -87,6 +168,16 @@ function setupMobileNav() {
 
     toggle.addEventListener('click', (event) => {
         event.stopPropagation();
+        const nextAction = nav.classList.contains('is-open') ? 'close_navigation' : 'open_navigation';
+        const interaction = event.detail === 0 ? 'keyboard' : 'mouse';
+        trackUiClick({
+            ui_area: 'header_nav',
+            ui_component: 'button',
+            ui_label: 'NAV_TOGGLE',
+            ui_action: nextAction,
+            ui_destination: '#header-nav',
+            ui_interaction: interaction
+        });
         if (nav.classList.contains('is-open')) {
             closeNav();
         } else {
@@ -326,7 +417,7 @@ function createHighlightList(items) {
     return list;
 }
 
-function createCardLinks(card) {
+function createCardLinks(card, sectionConfig) {
     const links = Array.isArray(card.links) ? card.links.filter((item) => item?.href) : [];
     if (links.length === 0 && card.learnMore && card.learnMore !== '#') {
         links.push({ label: card.linkLabel ?? 'LEARN MORE', href: card.learnMore });
@@ -353,11 +444,20 @@ function createCardLinks(card) {
             link.rel = 'noopener noreferrer';
         }
 
+        setTrackData(link, {
+            area: 'service_card',
+            component: 'link',
+            label: item.label || 'LINK',
+            action: 'open_case_link',
+            destination: item.href || '',
+            cardId: card.mermaidId || '',
+            cardTitle: card.title || '',
+            sectionId: sectionConfig?.id || ''
+        });
+
         // GA4 Event Tracking
         link.addEventListener('click', () => {
-            window.dataLayer = window.dataLayer || [];
-            window.dataLayer.push({
-                event: 'select_content',
+            pushDataLayerEvent('select_content', {
                 content_type: 'case_link',
                 item_id: card.title || 'unknown_case',
                 link_label: item.label,
@@ -408,7 +508,7 @@ function createServiceCard(card, sectionConfig) {
     const stackLine = createMetaLine('STACK', card.stackSummary);
     const tags = createTagList(card.skills);
     const highlights = createHighlightList(card.highlights);
-    const links = createCardLinks(card);
+    const links = createCardLinks(card, sectionConfig);
 
     content.append(title);
     if (subtitleText) {
@@ -523,6 +623,14 @@ function renderContact() {
             action.target = '_blank';
             action.rel = 'noopener noreferrer';
         }
+        setTrackData(action, {
+            area: 'contact',
+            component: 'button_link',
+            label: item.label || 'LINK',
+            action: 'open_contact_link',
+            destination: item.href || '',
+            sectionId: contact.sectionId || 'contact'
+        });
         actions.appendChild(action);
     });
 }
@@ -617,6 +725,13 @@ function renderNavigation() {
         link.className = 'nav-item';
         link.href = normalizeHashTarget(item.target);
         link.textContent = item.label || 'SECTION';
+        setTrackData(link, {
+            area: 'header_nav',
+            component: 'link',
+            label: item.label || 'SECTION',
+            action: 'navigate_section',
+            destination: normalizeHashTarget(item.target)
+        });
         nav.appendChild(link);
     });
 }
@@ -879,6 +994,11 @@ function setupMermaidModal() {
         document.body.classList.remove('modal-open');
     };
 
+    const resolveDiagramLabel = (target) =>
+        target.closest('.service-card')?.querySelector('.card-title')?.textContent?.trim() ||
+        target.closest('.hero-panel')?.querySelector('.panel-title')?.textContent?.trim() ||
+        'Mermaid Diagram';
+
     const openModal = (target) => {
         const sourceSvg = target.querySelector('.mermaid svg');
         if (!sourceSvg) {
@@ -929,10 +1049,7 @@ function setupMermaidModal() {
         zoom = 1;
         applyZoom();
 
-        const titleText =
-            target.closest('.service-card')?.querySelector('.card-title')?.textContent?.trim() ||
-            target.closest('.hero-panel')?.querySelector('.panel-title')?.textContent?.trim() ||
-            'Mermaid Diagram';
+        const titleText = resolveDiagramLabel(target);
         modalTitle.textContent = titleText;
 
         modal.classList.add('is-open');
@@ -942,6 +1059,15 @@ function setupMermaidModal() {
     };
 
     controls.querySelectorAll('[data-mermaid-zoom]').forEach((button) => {
+        const controlAction = button.getAttribute('data-mermaid-zoom') || 'zoom';
+        setTrackData(button, {
+            area: 'diagram_modal',
+            component: 'button',
+            label: `ZOOM_${controlAction.toUpperCase()}`,
+            action: `diagram_${controlAction}`,
+            destination: 'mermaid-modal'
+        });
+
         button.addEventListener('click', (event) => {
             const control = event.currentTarget;
             if (!(control instanceof HTMLElement)) {
@@ -1019,16 +1145,34 @@ function setupMermaidModal() {
         target.setAttribute('role', 'button');
         target.setAttribute('aria-label', 'Open expanded Mermaid diagram');
 
+        const diagramId = target.querySelector('.mermaid')?.getAttribute('data-mermaid-id') || '';
+        setTrackData(target, {
+            area: 'diagram',
+            component: 'diagram',
+            label: resolveDiagramLabel(target),
+            action: 'open_diagram_modal',
+            destination: diagramId
+        });
+
         target.addEventListener('click', () => openModal(target));
         target.addEventListener('keydown', (event) => {
             if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
+                trackElementInteraction(target, 'keyboard');
                 openModal(target);
             }
         });
     });
 
     modal.querySelectorAll('[data-mermaid-close]').forEach((closeButton) => {
+        const isButton = closeButton instanceof HTMLButtonElement;
+        setTrackData(closeButton, {
+            area: 'diagram_modal',
+            component: isButton ? 'button' : 'backdrop',
+            label: isButton ? 'CLOSE_MODAL_BUTTON' : 'CLOSE_MODAL_BACKDROP',
+            action: 'close_diagram_modal',
+            destination: 'mermaid-modal'
+        });
         closeButton.addEventListener('click', closeModal);
     });
 
@@ -1037,21 +1181,53 @@ function setupMermaidModal() {
             return;
         }
         if (event.key === 'Escape') {
+            trackUiClick({
+                ui_area: 'diagram_modal',
+                ui_component: 'keyboard',
+                ui_label: 'ESCAPE',
+                ui_action: 'close_diagram_modal',
+                ui_destination: 'mermaid-modal',
+                ui_interaction: 'keyboard'
+            });
             closeModal();
             return;
         }
         if (event.key === '+' || event.key === '=') {
             event.preventDefault();
+            trackUiClick({
+                ui_area: 'diagram_modal',
+                ui_component: 'keyboard',
+                ui_label: 'KEY_PLUS',
+                ui_action: 'diagram_in',
+                ui_destination: 'mermaid-modal',
+                ui_interaction: 'keyboard'
+            });
             setZoom(zoom + ZOOM_STEP);
             return;
         }
         if (event.key === '-' || event.key === '_') {
             event.preventDefault();
+            trackUiClick({
+                ui_area: 'diagram_modal',
+                ui_component: 'keyboard',
+                ui_label: 'KEY_MINUS',
+                ui_action: 'diagram_out',
+                ui_destination: 'mermaid-modal',
+                ui_interaction: 'keyboard'
+            });
             setZoom(zoom - ZOOM_STEP);
             return;
         }
         if (event.key === '0') {
             event.preventDefault();
+            trackUiClick({
+                ui_area: 'diagram_modal',
+                ui_component: 'keyboard',
+                ui_label: 'KEY_ZERO',
+                ui_action: 'diagram_reset',
+                ui_destination: 'mermaid-modal',
+                ui_interaction: 'keyboard'
+            });
             zoom = 1;
             applyZoom();
             scheduleCenterModalView();
@@ -1088,4 +1264,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     setupMermaidModal();
     setupScrollSpy();
+    setupInteractionTracking();
 });

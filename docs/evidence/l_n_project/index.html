@@ -334,11 +334,65 @@
         const nav = document.getElementById('index-nav');
         const evidenceGrid = document.getElementById('evidence-grid');
 
+        const pushDataLayerEvent = (eventName, payload = {}) => {
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+                event: eventName,
+                tracking_version: '2026-03-ui-click-v1',
+                page_path: window.location.pathname,
+                page_title: document.title,
+                ...payload
+            });
+        };
+
+        const trackUiClick = (payload = {}) => {
+            pushDataLayerEvent('ui_click', payload);
+        };
+
+        const bindTrackedClick = (element, payloadFactory) => {
+            if (!(element instanceof HTMLElement)) {
+                return;
+            }
+            element.dataset.trackBound = 'true';
+
+            const emit = (interaction) => {
+                const payload = typeof payloadFactory === 'function' ? payloadFactory() : payloadFactory;
+                trackUiClick({
+                    ui_area: 'evidence_page',
+                    ui_component: element.tagName.toLowerCase(),
+                    ui_label: element.textContent?.trim() || 'unknown',
+                    ui_action: 'click',
+                    ui_destination: element.getAttribute('href') || '',
+                    ...payload,
+                    ui_interaction: interaction
+                });
+            };
+
+            element.addEventListener('click', (event) => {
+                const interaction = event.detail === 0 ? 'keyboard' : 'mouse';
+                emit(interaction);
+            });
+
+            element.addEventListener('auxclick', (event) => {
+                if (event.button === 1) {
+                    emit('auxclick');
+                }
+            });
+        };
+
         const closeNav = () => {
             nav.classList.remove('is-open');
             toggle.setAttribute('aria-expanded', 'false');
             toggle.textContent = 'INDEX';
         };
+
+        bindTrackedClick(toggle, () => ({
+            ui_area: 'evidence_header',
+            ui_component: 'button',
+            ui_label: 'INDEX_TOGGLE',
+            ui_action: nav.classList.contains('is-open') ? 'close_index_nav' : 'open_index_nav',
+            ui_destination: '#index-nav'
+        }));
 
         toggle.addEventListener('click', () => {
             const nextOpen = !nav.classList.contains('is-open');
@@ -1287,6 +1341,15 @@
             navLink.className = 'index-link';
             navLink.href = `#${card.id}`;
             navLink.textContent = `${index + 1}. ${card.title}`;
+            bindTrackedClick(navLink, {
+                ui_area: 'evidence_nav',
+                ui_component: 'link',
+                ui_label: card.title,
+                ui_action: 'jump_card_section',
+                ui_destination: `#${card.id}`,
+                ui_card_id: card.id,
+                ui_card_title: card.title
+            });
             nav.appendChild(navLink);
 
             const panel = document.createElement('section');
@@ -1314,6 +1377,15 @@
             readmeLink.target = '_blank';
             readmeLink.rel = 'noopener noreferrer';
             readmeLink.textContent = card.readme;
+            bindTrackedClick(readmeLink, {
+                ui_area: 'evidence_card',
+                ui_component: 'link',
+                ui_label: 'README_SOURCE',
+                ui_action: 'open_readme_source',
+                ui_destination: card.readme,
+                ui_card_id: card.id,
+                ui_card_title: card.title
+            });
             readmeItem.appendChild(readmeLink);
             readmeList.appendChild(readmeItem);
 
@@ -1331,6 +1403,15 @@
                 link.textContent = toFileName(path);
                 link.title = `private source path: ${path}`;
                 link.setAttribute('aria-label', `Open readme source for ${path}`);
+                bindTrackedClick(link, {
+                    ui_area: 'evidence_card',
+                    ui_component: 'link',
+                    ui_label: toFileName(path),
+                    ui_action: 'open_readme_from_code_pointer',
+                    ui_destination: card.readme,
+                    ui_card_id: card.id,
+                    ui_card_title: card.title
+                });
                 item.appendChild(link);
                 codeList.appendChild(item);
             });
@@ -1375,6 +1456,56 @@
             );
 
             evidenceGrid.appendChild(panel);
+        });
+
+        document.addEventListener('click', (event) => {
+            const target = event.target;
+            if (!(target instanceof Element)) {
+                return;
+            }
+            const clickable = target.closest('a, button');
+            if (!(clickable instanceof HTMLElement)) {
+                return;
+            }
+            if (clickable.dataset.trackBound === 'true') {
+                return;
+            }
+
+            const interaction = event.detail === 0 ? 'keyboard' : 'mouse';
+            trackUiClick({
+                ui_area: 'evidence_page',
+                ui_component: clickable.tagName.toLowerCase(),
+                ui_label: clickable.textContent?.trim() || 'unknown',
+                ui_action: 'generic_click',
+                ui_destination: clickable.getAttribute('href') || '',
+                ui_interaction: interaction
+            });
+        });
+
+        document.addEventListener('auxclick', (event) => {
+            if (event.button !== 1) {
+                return;
+            }
+            const target = event.target;
+            if (!(target instanceof Element)) {
+                return;
+            }
+            const clickable = target.closest('a, button');
+            if (!(clickable instanceof HTMLElement)) {
+                return;
+            }
+            if (clickable.dataset.trackBound === 'true') {
+                return;
+            }
+
+            trackUiClick({
+                ui_area: 'evidence_page',
+                ui_component: clickable.tagName.toLowerCase(),
+                ui_label: clickable.textContent?.trim() || 'unknown',
+                ui_action: 'generic_click',
+                ui_destination: clickable.getAttribute('href') || '',
+                ui_interaction: 'auxclick'
+            });
         });
 
         if (window.hljs) {
