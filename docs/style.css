@@ -162,6 +162,10 @@ body.modal-open {
     gap: 1.4rem;
 }
 
+.top-panels > .panel:only-child {
+    grid-column: 1 / -1;
+}
+
 .top-panels:empty {
     display: none;
 }
@@ -329,6 +333,14 @@ body.modal-open {
     font-weight: 700;
     font-family: var(--font-code);
     letter-spacing: 0.03em;
+}
+
+.section-summary {
+    margin-top: 0.5rem;
+    font-size: 0.84rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    max-width: 1050px;
 }
 
 .service-grid {

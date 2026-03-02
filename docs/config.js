@@ -56,17 +56,29 @@ export const templateConfig = {
 
     hero: {
         sectionId: 'system-architecture',
-        panelTitle: 'SYSTEM_ARCHITECTURE',
+        panelTitle: 'SYSTEM_OVERVIEW',
         panelUid: 'ID: LIFE-NAV-01',
-        diagramId: 'architecture',
+        diagramId: 'architecture-simple',
         metrics: [
-            'READ p95: 975ms -> 141ms (-86%) @500VU',
-            'WRITE p95: 1.9s -> 126ms (-93%) @500VU',
-            'READ/WRITE RPS: 972 -> 3,680 (+279%), 373 -> 916 (+146%)',
-            'FASTAPI IMG/BUILD: 26GB -> 1GB (-96%), 1004s -> 98s (-90%)',
-            'FRONTEND BUILD/SETUP: 4m10s -> 45s (-82%), 30m -> 2m (-95%)'
+            'PROBLEM: High-concurrency requests caused latency spikes and consistency risk.',
+            'CHOICE: API/Worker split with Redis + RabbitMQ async path, plus isolated AI service.',
+            'RESULT: READ p95 975ms -> 141ms, WRITE p95 1.9s -> 126ms @500VU.'
         ]
     },
+
+    topPanels: [
+        {
+            sectionId: 'system-architecture-detail',
+            panelTitle: 'SYSTEM_ARCHITECTURE_DETAIL',
+            panelUid: 'ID: LIFE-NAV-02',
+            navLabel: 'ARCH_DETAIL',
+            diagramId: 'architecture',
+            metrics: [
+                'WHY: Runtime paths are split to isolate auth, async write, and AI recommendation risks.',
+                'EVIDENCE: See Backend and DevOps cards for flow-by-flow implementation and incident fixes.'
+            ]
+        }
+    ],
 
     skills: {
         sectionId: 'skill-set',
@@ -86,6 +98,7 @@ export const templateConfig = {
             id: 'backend-services',
             title: 'BACKEND_SERVICES',
             navLabel: 'BACKEND_SERVICES',
+            summary: 'PROBLEM: High-concurrency read/write consistency and auth reliability. CHOICE: Hexagonal Spring + API/Worker split + FastAPI bounded context. RESULT: WRITE p95 1.9s -> 126ms @500VU.',
             theme: 'blue',
             cardVisualHeight: '290px',
             cardClass: 'backend-card',
@@ -103,18 +116,26 @@ export const templateConfig = {
             ]
         },
         {
-            id: 'frontend-services',
-            title: 'FRONTEND_SERVICES',
-            navLabel: 'FRONTEND_SERVICES',
-            theme: 'green',
-            cardVisualHeight: '260px',
-            cardClass: 'frontend-card',
-            cards: mapCards(["frontend-monorepo-architecture", "frontend-api-bridge", "frontend-package-map", "frontend-rtk-single-source", "frontend-di-composition", "frontend-troubleshooting-patterns"])
+            id: 'load-reliability-services',
+            title: 'LOAD_AND_RELIABILITY',
+            navLabel: 'LOAD_RELIABILITY',
+            summary: 'PROBLEM: Tuning regressions and hidden failure modes during scale tests. CHOICE: Reproducible k6 profiles + isolated stress lifecycle + incident runbooks. RESULT: READ p95 975ms -> 141ms and repeatable stress validation.',
+            theme: 'orange',
+            cardVisualHeight: '265px',
+            cardClass: 'devops-card',
+            groups: [
+                {
+                    title: 'PERFORMANCE & INCIDENT OPERATIONS',
+                    desc: 'k6 Profiles / Stress Mode Lifecycle / Troubleshooting',
+                    cards: mapCards(["devops-k6-load-architecture", "devops-stress-mode-lifecycle", "devops-troubleshooting-patterns"])
+                }
+            ]
         },
         {
             id: 'devops-services',
             title: 'DEVOPS_SERVICES',
             navLabel: 'DEVOPS_SERVICES',
+            summary: 'PROBLEM: Monorepo delivery latency and insecure home-server deployment paths. CHOICE: Selective CI, WireGuard CD, runtime validation, and full observability pipeline. RESULT: Faster feedback loops with safer branch-aware releases.',
             theme: 'orange',
             cardVisualHeight: '265px',
             cardClass: 'devops-card',
@@ -126,15 +147,20 @@ export const templateConfig = {
                 },
                 {
                     title: 'RUNTIME INFRA',
-                    desc: 'Compose Topology / Build Strategy / Edge Security / Observability',
+                    desc: 'Compose Topology / Build Strategy / Nginx Validation / Edge Security / Observability',
                     cards: mapCards(["devops-compose-topology", "devops-docker-build-map", "devops-nginx-runtime-validation", "devops-edge-security", "devops-observability-pipeline"])
-                },
-                {
-                    title: 'LOAD & RELIABILITY',
-                    desc: 'k6 Profiles / Stress Mode Switch / Operational Troubleshooting',
-                    cards: mapCards(["devops-k6-load-architecture", "devops-stress-mode-lifecycle", "devops-troubleshooting-patterns"])
                 }
             ]
+        },
+        {
+            id: 'frontend-services',
+            title: 'FRONTEND_SERVICES',
+            navLabel: 'FRONTEND_SERVICES',
+            summary: 'PROBLEM: Multi-platform client divergence and async UI-state mismatch risk. CHOICE: Monorepo boundaries + RTK Query single-source + DI composition. RESULT: Shared domain logic with controlled optimistic update behavior.',
+            theme: 'green',
+            cardVisualHeight: '260px',
+            cardClass: 'frontend-card',
+            cards: mapCards(["frontend-monorepo-architecture", "frontend-api-bridge", "frontend-package-map", "frontend-rtk-single-source", "frontend-di-composition", "frontend-troubleshooting-patterns"])
         }
     ],
 

@@ -457,6 +457,13 @@ function renderServiceSections() {
         heading.textContent = sectionConfig.title ?? 'SERVICES';
         header.appendChild(heading);
 
+        if (sectionConfig.summary) {
+            const summary = document.createElement('p');
+            summary.className = 'section-summary';
+            summary.textContent = sectionConfig.summary;
+            header.appendChild(summary);
+        }
+
         const groupsContainer = document.createElement('div');
         groupsContainer.className = 'service-groups';
 

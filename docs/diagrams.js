@@ -1,4 +1,22 @@
 export const diagrams = {
+        'architecture-simple': `
+            graph LR
+            CLIENT[Client]
+            EDGE[Cloudflare + Nginx]
+            SPRING[Spring API + Worker]
+            FASTAPI[FastAPI AI]
+            DATA[(PostgreSQL + Redis + RabbitMQ + Qdrant)]
+
+            CLIENT --> EDGE
+            EDGE --> SPRING
+            EDGE --> FASTAPI
+            SPRING --> DATA
+            FASTAPI --> DATA
+
+            classDef default fill:#161b22,stroke:#30363d,color:#c9d1d9
+            classDef accent fill:#161b22,stroke:#58a6ff,color:#58a6ff
+            class CLIENT,EDGE,SPRING,FASTAPI accent
+        `,
         'architecture': `
             graph LR
             subgraph Client [Client]
