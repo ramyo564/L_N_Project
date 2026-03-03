@@ -25,7 +25,7 @@
             --panel: #0f1623;
             --line: #233248;
             --text: #d8e2f2;
-            --muted: #95a7c4;
+            --muted: #d9e6ff;
             --blue: #58a6ff;
             --gold: #d29922;
             --green: #2ea043;
@@ -175,7 +175,8 @@
         }
 
         .muted {
-            color: var(--muted);
+            color: var(--muted) !important;
+            opacity: 1;
         }
 
         .case-summary {
@@ -308,20 +309,17 @@
     <main class="wrap">
         <section class="panel">
             <h2>Overview</h2>
-            <p class="muted">Hybrid evidence mode: architecture cards map to README anchors and verified implementation
-                snippets.</p>
-            <p class="muted" style="margin-top:8px;">Code paths in this page are based on <strong>upgrade_todo (private
-                    repository)</strong>. Clicking file names opens the public README evidence for the same card, while
-                snippets are extracted from actual implementation files.</p>
+            <p class="muted">하이브리드 증거 모드: 아키텍처 카드의 주장과 README 앵커, 구현 스니펫을 한 화면에서 연결해 보여줍니다.</p>
+            <p class="muted" style="margin-top:8px;">아키텍처 카드에서 주장한 내용이 실제 코드/설정과 어떻게 연결되는지 한 화면에서 확인할 수 있습니다.</p>
+            <p class="muted" style="margin-top:8px;">이 페이지의 코드 경로는 <strong>upgrade_todo(private repository)</strong> 기준이며, 파일명을 클릭하면 동일 카드의 공개 README 근거로 이동합니다. 스니펫은 실제 구현 코드 기준으로 정리했습니다.</p>
         </section>
 
         <section id="evidence-grid" class="evidence-grid"></section>
 
         <section class="panel">
             <h2>Note</h2>
-            <p class="muted">Code evidence list uses file-name-first display for readability. Full private path is
-                available via tooltip on each link.</p>
-            <p class="muted" style="margin-top:8px;">Back to architecture dashboard: <a
+            <p class="muted">가독성을 위해 코드 근거 목록은 파일명 우선으로 표시하며, 전체 private 경로는 각 링크의 tooltip에서 확인할 수 있습니다.</p>
+            <p class="muted" style="margin-top:8px;">아키텍처 대시보드로 돌아가기: <a
                     href="../../index.html">L_N_Project/docs/index.html</a></p>
         </section>
     </main>

@@ -60,9 +60,10 @@ export const templateConfig = {
         panelUid: 'ID: LIFE-NAV-01',
         diagramId: 'architecture-simple',
         metrics: [
-            'PROBLEM: High-concurrency requests caused latency spikes and consistency risk.',
-            'CHOICE: API/Worker split with Redis + RabbitMQ async path, plus isolated AI service.',
-            'RESULT: READ p95 975ms -> 141ms, WRITE p95 1.9s -> 126ms @500VU.'
+            'READ FLOW: 위에서 아래로 - 한눈 개요 -> 상세 아키텍처 -> 카드별 Evidence 링크',
+            'PROBLEM: 고부하 요청에서 지연 급증과 정합성 리스크가 발생했습니다.',
+            'CHOICE: API/Worker 분리 + Redis/RabbitMQ 비동기 경로 + FastAPI AI 서비스 분리를 선택했습니다.',
+            'RESULT: READ p95 975ms -> 141ms, WRITE p95 1.9s -> 126ms (@500VU).'
         ]
     },
 
@@ -74,8 +75,8 @@ export const templateConfig = {
             navLabel: 'ARCH_DETAIL',
             diagramId: 'architecture',
             metrics: [
-                'WHY: Runtime paths are split to isolate auth, async write, and AI recommendation risks.',
-                'EVIDENCE: See Backend and DevOps cards for flow-by-flow implementation and incident fixes.'
+                'WHY: 인증/비동기 쓰기/AI 추천 경로를 분리해 병목과 장애 전파를 격리하기 위해 런타임 플로우를 분리했습니다.',
+                'EVIDENCE: 아래 Backend/DevOps 카드에서 경로별 구현 코드와 장애 대응 근거를 확인할 수 있습니다.'
             ]
         }
     ],
@@ -98,7 +99,7 @@ export const templateConfig = {
             id: 'backend-services',
             title: 'BACKEND_SERVICES',
             navLabel: 'BACKEND_SERVICES',
-            summary: 'PROBLEM: High-concurrency read/write consistency and auth reliability. CHOICE: Hexagonal Spring + API/Worker split + FastAPI bounded context. RESULT: WRITE p95 1.9s -> 126ms @500VU.',
+            summary: 'PROBLEM: 고동시성 환경에서 읽기/쓰기 정합성과 인증 안정성이 흔들렸습니다. CHOICE: Hexagonal Spring + API/Worker 분리 + FastAPI 경계 분리를 적용했습니다. RESULT: WRITE p95 1.9s -> 126ms (@500VU).',
             theme: 'blue',
             cardVisualHeight: '290px',
             cardClass: 'backend-card',
@@ -119,7 +120,7 @@ export const templateConfig = {
             id: 'load-reliability-services',
             title: 'LOAD_AND_RELIABILITY',
             navLabel: 'LOAD_RELIABILITY',
-            summary: 'PROBLEM: Tuning regressions and hidden failure modes during scale tests. CHOICE: Reproducible k6 profiles + isolated stress lifecycle + incident runbooks. RESULT: READ p95 975ms -> 141ms and repeatable stress validation.',
+            summary: 'PROBLEM: 스케일 테스트 중 튜닝 회귀와 숨은 실패 모드가 반복되었습니다. CHOICE: 재현 가능한 k6 프로파일 + 분리된 stress lifecycle + incident runbook을 구축했습니다. RESULT: READ p95 975ms -> 141ms, stress 검증 재현성을 확보했습니다.',
             theme: 'orange',
             cardVisualHeight: '265px',
             cardClass: 'devops-card',
@@ -135,7 +136,7 @@ export const templateConfig = {
             id: 'devops-services',
             title: 'DEVOPS_SERVICES',
             navLabel: 'DEVOPS_SERVICES',
-            summary: 'PROBLEM: Monorepo delivery latency and insecure home-server deployment paths. CHOICE: Selective CI, WireGuard CD, runtime validation, and full observability pipeline. RESULT: Faster feedback loops with safer branch-aware releases.',
+            summary: 'PROBLEM: 모노레포 배포 지연과 홈서버 배포 경로의 보안 리스크가 있었습니다. CHOICE: Selective CI + WireGuard CD + runtime validation + observability pipeline을 적용했습니다. RESULT: 피드백 속도와 배포 안전성을 함께 개선했습니다.',
             theme: 'orange',
             cardVisualHeight: '265px',
             cardClass: 'devops-card',
@@ -156,7 +157,7 @@ export const templateConfig = {
             id: 'frontend-services',
             title: 'FRONTEND_SERVICES',
             navLabel: 'FRONTEND_SERVICES',
-            summary: 'PROBLEM: Multi-platform client divergence and async UI-state mismatch risk. CHOICE: Monorepo boundaries + RTK Query single-source + DI composition. RESULT: Shared domain logic with controlled optimistic update behavior.',
+            summary: 'PROBLEM: 멀티플랫폼 클라이언트에서 상태 동기화 불일치가 발생했습니다. CHOICE: Monorepo 경계 + RTK Query 단일 상태원 + DI composition을 적용했습니다. RESULT: 공통 도메인 재사용성과 낙관적 업데이트 안정성을 확보했습니다.',
             theme: 'green',
             cardVisualHeight: '260px',
             cardClass: 'frontend-card',
