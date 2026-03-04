@@ -58,8 +58,30 @@ function pushDataLayerEvent(eventName, payload = {}) {
     });
 }
 
+function normalizeTrackingPayload(payload = {}) {
+    const normalized = { ...payload };
+    const uiLabel = String(normalized.ui_label ?? normalized.element_label ?? normalized.link_label ?? 'unknown');
+    const uiSection = String(normalized.ui_section_id ?? normalized.section_name ?? 'unknown');
+    const uiCardId = String(normalized.ui_card_id ?? normalized.item_id ?? '');
+    const uiCardTitle = String(normalized.ui_card_title ?? normalized.item_name ?? '');
+
+    normalized.ui_label = uiLabel;
+    normalized.ui_section_id = uiSection;
+    normalized.ui_card_id = uiCardId;
+    normalized.ui_card_title = uiCardTitle;
+
+    normalized.element_label = String(normalized.element_label ?? uiLabel);
+    normalized.section_name = String(normalized.section_name ?? uiSection);
+    const fallbackItemId = uiCardId || uiLabel;
+    const fallbackItemName = uiCardTitle || uiLabel;
+    normalized.item_id = String(normalized.item_id ?? fallbackItemId);
+    normalized.item_name = String(normalized.item_name ?? fallbackItemName);
+
+    return normalized;
+}
+
 function trackUiClick(payload = {}) {
-    pushDataLayerEvent('ui_click', payload);
+    pushDataLayerEvent('ui_click', normalizeTrackingPayload(payload));
 }
 
 function setTrackData(element, payload = {}) {
@@ -74,7 +96,8 @@ function setTrackData(element, payload = {}) {
     element.dataset.trackDestination = payload.destination ?? '';
     element.dataset.trackCardId = payload.cardId ?? '';
     element.dataset.trackCardTitle = payload.cardTitle ?? '';
-    element.dataset.trackSectionId = payload.sectionId ?? '';
+    const fallbackSection = element.closest('section[id], .service-section[id], .panel[id]')?.id ?? '';
+    element.dataset.trackSectionId = payload.sectionId ?? fallbackSection;
 }
 
 function trackElementInteraction(element, interaction = 'mouse') {
@@ -641,7 +664,10 @@ function createCardLinks(card, sectionConfig) {
         link.addEventListener('click', () => {
             pushDataLayerEvent('select_content', {
                 content_type: 'case_link',
-                item_id: card.title || 'unknown_case',
+                item_id: card.mermaidId || card.title || 'unknown_case',
+                item_name: card.title || 'unknown_case',
+                section_name: sectionConfig?.id || 'unknown',
+                element_label: item.label || 'LINK',
                 link_label: item.label,
                 link_url: item.href
             });
@@ -942,12 +968,14 @@ function renderNavigation() {
         link.className = 'nav-item';
         link.href = normalizeHashTarget(item.target);
         link.textContent = item.label || 'SECTION';
+        const targetId = String(link.href).includes('#') ? String(item.target || '').replace(/^#/, '') : '';
         setTrackData(link, {
             area: 'header_nav',
             component: 'link',
             label: item.label || 'SECTION',
             action: 'navigate_section',
-            destination: normalizeHashTarget(item.target)
+            destination: normalizeHashTarget(item.target),
+            sectionId: targetId || 'header-nav'
         });
         nav.appendChild(link);
     });
