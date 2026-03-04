@@ -180,6 +180,13 @@ graph LR
 | 임베딩 작업 성능 | **Celery** 도입 예정 | 백그라운드 큐 처리 |
 | 향후 AI 고도화 | **컨텍스트 기반 분석 확장** | 데이터 축적 후 분석 품질 향상 고려 |
 
+<a id="lm-backend-fastapi-decision-tradeoff"></a>
+**의사결정 근거 (Why / Alternative / Trade-off / Constraint)**:
+- **왜 선택했는가**: 1인 개발 제약에서 학습 비용과 운영 안정성을 우선했다. 이미 익숙한 Spring을 메인으로 유지하되, AI 추론 경로는 I/O 강점과 생태계(비동기, Celery/RMQ, LLM 연동) 측면에서 FastAPI가 유리하다고 판단했다.
+- **안 고른 대안**: Go, Express.js, Spring WebFlux.
+- **대안 대비 손해(Trade-off)**: 서비스 경계가 늘어나면서 운영 복잡도(배포/추적/장애 지점)가 증가하고, 순수 성능만 보면 단일 런타임보다 불리할 수 있다.
+- **손해 감수 근거(제약/운영조건)**: 프론트에서 AI 추론 호출 시 Spring 경유 I/O 병목을 줄이는 것이 우선 과제였고, 자료/사례가 풍부한 스택을 선택해 유지보수 리스크를 낮추는 편이 프로젝트 총비용에 유리하다고 판단했다.
+
 <a id="lm-backend-fastapi-analyze"></a>
 ### FastAPI Analyze Path
 
@@ -277,6 +284,14 @@ sequenceDiagram
 
 </details>
 
+<a id="lm-backend-qdrant-tradeoff"></a>
+### Qdrant 선택 근거 (Why / Alternative / Trade-off / Constraint)
+
+- **왜 선택했는가**: 무료로 시작 가능하고 Docker 기반으로 운영/확장이 쉬워 1인 개발 환경에 적합했다.
+- **안 고른 대안**: Pinecone, Milvus, pgvector, Chroma, Weaviate.
+- **대안 대비 손해(Trade-off)**: Managed 서비스 대비 직접 운영 부담이 생기고, 인덱싱/튜닝/대규모 운영은 추가 학습 비용이 필요하다.
+- **손해 감수 근거(제약/운영조건)**: 초기 단계에서 비용 통제와 운영 단순성이 더 중요했고, 현 트래픽 규모에서는 기능/성능보다 운영 비용 최소화가 우선이라고 판단했다.
+
 ---
 
 ## Spring Boot (메인 백엔드)
@@ -335,6 +350,12 @@ graph TD
 - 삭제 엔티티 상태 전이 차단, reorder 중복 ID 차단, 삭제 요청 멱등 처리 규칙을 도메인 경계에서 강제합니다.
 - 상세 규칙은 [BusinessRules.md](./BusinessRules.md), 동시성 경계는 [ConcurrencyControl.md](./ConcurrencyControl.md)에서 추적합니다.
 
+**의사결정 근거 (Why / Alternative / Trade-off / Constraint)**:
+- **왜 선택했는가**: API별 인라인 검증은 규칙 누락과 정책 편차가 누적되기 쉬워, 권한/상태/중복/멱등 규칙을 도메인 경계로 중앙화했습니다.
+- **안 고른 대안**: Controller/Service 계층 인라인 검증(엔드포인트별 분산 구현).
+- **대안 대비 손해(Trade-off)**: 단순 API에서도 클래스/규칙 설계 비용이 먼저 발생해 초기 개발 속도가 느려질 수 있습니다.
+- **손해 감수 근거(제약/운영조건)**: 1인 개발에서는 단기 구현속도보다 "누락 없는 일관성 + 테스트 가능성"이 장기 유지보수 비용을 더 크게 줄인다고 판단했습니다.
+
 <a id="lm-backend-spring-state-management"></a>
 ### Spring State Management
 
@@ -358,7 +379,8 @@ graph TD
 **MSA 대신 모놀리식 + 역할 분리를 선택한 이유**:
 - **제한된 리소스**: 홈서버(8코어 16스레드 32GB) 환경에서 MSA는 오버엔지니어링
 - **이미지 재사용**: 같은 Docker 이미지로 환경변수만 변경 → 디스크/메모리 절감
-- **낮은 복잡도**: 서비스 간 네트워크 통신 불필요 → 분산 트랜잭션(2PC, Saga) 회피
+- **낮은 복잡도(용어 명확화)**: 여기서 회피한 대상은 MSA에서 자주 필요한 교차 서비스 분산 트랜잭션 조정(2PC, 오케스트레이션 Saga)입니다.
+- **대신 채택한 패턴(상태 전이 카드와 분리된 통신 전략 맥락)**: 모놀리식 내부 Auth/User 경계는 Transactional Outbox + 이벤트 소비 체인(Choreography 성격)으로 결과적 일관성을 관리합니다.
 - **확장성 보장**: 향후 트래픽 증가 시 컨테이너만 분리하면 MSA 전환 가능
 
 ### ERD (Entity Relationship Diagram)
@@ -586,6 +608,13 @@ sequenceDiagram
 
 JWT 기반 인증에서 Stateless의 한계(토큰 탈취 시 무효화 불가)를 Redis 블랙리스트로 보완
 
+**의사결정 근거 (Why / Alternative / Trade-off / Constraint)**:
+- **왜 선택했는가**: Spring/Frontend/FastAPI를 아우르는 인증 정책을 단일 검증 경로(Spring verify)로 유지해 정책 불일치 위험을 줄였습니다.
+- **안 고른 대안**: FastAPI 로컬 JWT 검증(비밀키/정책 이중화), Auth 서비스 별도 분리(MSA).
+- **대안 대비 손해(Trade-off)**: FastAPI 인증 경로가 Spring verify 가용성에 의존해 인증 독립성이 낮아집니다.
+- **손해 감수 근거(제약/운영조건)**: 1인 운영에서는 키 회전/정책 동기화/중복 구현 비용이 더 큰 리스크라서, 단일 정책 경로 유지가 총비용 관점에서 유리했습니다.
+- **역할 경계(BE-C02)**: 이 섹션은 인증 정책/경계 정의 카드이며, FastAPI의 요청 단위 verify 실행 흐름은 아래 `FastAPI 인증 흐름(BE-C10)`에서 분리해 다룹니다.
+
 ```mermaid
 sequenceDiagram
     participant C as Client
@@ -709,8 +738,18 @@ src/app/
 └── prompts/      # AI 프롬프트 템플릿
 ```
 
+**의사결정 근거 (Why / Alternative / Trade-off / Constraint)**:
+- **왜 선택했는가**: AI provider/벡터DB/Spring 연동처럼 변경 가능성이 높은 외부 의존성을 핵심 로직과 분리해 교체 비용과 회귀 위험을 줄였습니다.
+- **안 고른 대안**: Router/Service/Client 혼합 단일 계층(Flat 구조).
+- **대안 대비 손해(Trade-off)**: 초기 설계/DI 구성 비용이 늘고 디버깅 경로가 길어질 수 있습니다.
+- **손해 감수 근거(제약/운영조건)**: 초기 속도 손해보다 장기 테스트성(모킹/대체)과 유지보수성이 더 중요했고, 현재는 timeout/status 분기 + fallback 중심의 완충 전략으로 운영 안정성을 확보하는 쪽을 선택했습니다.
+
 <a id="lm-backend-fastapi-auth"></a>
 ### 인증 흐름
+
+- **역할 경계(BE-C10)**: FastAPI는 요청마다 Bearer 토큰을 추출해 `spring_verify_url`로 검증하고 결과를 사용자 컨텍스트로 매핑하는 구현 책임을 가집니다.
+- **BE-C02와 분리 기준**: verify 정책/키 관리/검증 기준은 Spring Auth 정책(BE-C02), FastAPI는 그 정책을 요청 경로에서 실행하는 어댑터(BE-C10)입니다.
+- **대안 대비 손해(Trade-off)**: 로컬 JWT 검증 대비 네트워크 hop과 Spring verify 의존성이 증가합니다.
 
 ```mermaid
 sequenceDiagram
