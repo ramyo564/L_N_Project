@@ -331,12 +331,25 @@
         const toggle = document.getElementById('index-toggle');
         const nav = document.getElementById('index-nav');
         const evidenceGrid = document.getElementById('evidence-grid');
+        const analyticsSession = {
+            id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+        };
 
-        const pushDataLayerEvent = (eventName, payload = {}) => {
+        const detectLinkType = (href) => {
+            const target = String(href || '').trim().toLowerCase();
+            if (!target) return '';
+            if (target.startsWith('mailto:')) return 'mailto';
+            if (target.startsWith('#')) return 'anchor';
+            if (target.startsWith('http://') || target.startsWith('https://')) return 'external';
+            return 'internal';
+        };
+
+        const pushDataLayerEvent = (payload = {}) => {
             window.dataLayer = window.dataLayer || [];
             window.dataLayer.push({
-                event: eventName,
-                tracking_version: '2026-03-ui-click-v1',
+                event: 'select_content',
+                tracking_version: '2026-03-ga4-unified-v1',
+                session_id: analyticsSession.id,
                 page_path: window.location.pathname,
                 page_title: document.title,
                 ...payload
@@ -344,7 +357,32 @@
         };
 
         const trackUiClick = (payload = {}) => {
-            pushDataLayerEvent('ui_click', payload);
+            const uiLabel = String(payload.ui_label ?? payload.element_label ?? payload.link_label ?? 'unknown');
+            const uiSection = String(payload.ui_section_id ?? payload.section_name ?? 'evidence_page');
+            const uiCardId = String(payload.ui_card_id ?? payload.item_id ?? '');
+            const uiCardTitle = String(payload.ui_card_title ?? payload.item_name ?? '');
+            const itemId = uiCardId || uiLabel;
+            const itemName = uiCardTitle || uiLabel;
+            const linkUrl = String(payload.link_url ?? payload.ui_destination ?? '');
+
+            const normalizedPayload = {
+                content_type: String(payload.content_type ?? payload.ui_area ?? 'ui_interaction'),
+                item_id: itemId,
+                item_name: itemName,
+                section_name: uiSection,
+                interaction_action: String(payload.interaction_action ?? payload.ui_action ?? 'click'),
+                element_type: String(payload.element_type ?? payload.ui_component ?? 'element'),
+                element_label: String(payload.element_label ?? uiLabel),
+                source_event: 'ui_click',
+                ...payload
+            };
+
+            if (linkUrl) {
+                normalizedPayload.link_url = linkUrl;
+                normalizedPayload.link_type = String(payload.link_type ?? detectLinkType(linkUrl));
+            }
+
+            pushDataLayerEvent(normalizedPayload);
         };
 
         const bindTrackedClick = (element, payloadFactory) => {

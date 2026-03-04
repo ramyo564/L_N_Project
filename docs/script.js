@@ -24,6 +24,9 @@ const mermaidConfig = {
 
 mermaid.initialize(mermaidConfig);
 let mermaidRenderCounter = 0;
+const analyticsSession = {
+    id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+};
 
 function byId(id) {
     return document.getElementById(id);
@@ -51,11 +54,29 @@ function pushDataLayerEvent(eventName, payload = {}) {
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
         event: eventName,
-        tracking_version: '2026-03-ui-click-v1',
+        tracking_version: '2026-03-ga4-unified-v1',
+        session_id: analyticsSession.id,
         page_path: window.location.pathname,
         page_title: document.title,
         ...payload
     });
+}
+
+function detectLinkType(href) {
+    const target = String(href || '').trim().toLowerCase();
+    if (!target) {
+        return '';
+    }
+    if (target.startsWith('mailto:')) {
+        return 'mailto';
+    }
+    if (target.startsWith('#')) {
+        return 'anchor';
+    }
+    if (target.startsWith('http://') || target.startsWith('https://')) {
+        return 'external';
+    }
+    return 'internal';
 }
 
 function normalizeTrackingPayload(payload = {}) {
@@ -76,12 +97,23 @@ function normalizeTrackingPayload(payload = {}) {
     const fallbackItemName = uiCardTitle || uiLabel;
     normalized.item_id = String(normalized.item_id ?? fallbackItemId);
     normalized.item_name = String(normalized.item_name ?? fallbackItemName);
+    normalized.content_type = String(normalized.content_type ?? normalized.ui_area ?? 'ui_interaction');
+    normalized.interaction_action = String(normalized.interaction_action ?? normalized.ui_action ?? 'click');
+    normalized.element_type = String(normalized.element_type ?? normalized.ui_component ?? 'element');
+
+    const resolvedLinkUrl = String(normalized.link_url ?? normalized.ui_destination ?? '');
+    if (resolvedLinkUrl) {
+        normalized.link_url = resolvedLinkUrl;
+        normalized.link_type = String(normalized.link_type ?? detectLinkType(resolvedLinkUrl));
+    }
+
+    normalized.source_event = String(normalized.source_event ?? 'ui_click');
 
     return normalized;
 }
 
 function trackUiClick(payload = {}) {
-    pushDataLayerEvent('ui_click', normalizeTrackingPayload(payload));
+    pushDataLayerEvent('select_content', normalizeTrackingPayload(payload));
 }
 
 function setTrackData(element, payload = {}) {
@@ -650,27 +682,14 @@ function createCardLinks(card, sectionConfig) {
         }
 
         setTrackData(link, {
-            area: 'service_card',
+            area: 'case_link',
             component: 'link',
             label: item.label || 'LINK',
-            action: 'open_case_link',
+            action: 'open_link',
             destination: item.href || '',
             cardId: card.mermaidId || '',
             cardTitle: card.title || '',
             sectionId: sectionConfig?.id || ''
-        });
-
-        // GA4 Event Tracking
-        link.addEventListener('click', () => {
-            pushDataLayerEvent('select_content', {
-                content_type: 'case_link',
-                item_id: card.mermaidId || card.title || 'unknown_case',
-                item_name: card.title || 'unknown_case',
-                section_name: sectionConfig?.id || 'unknown',
-                element_label: item.label || 'LINK',
-                link_label: item.label,
-                link_url: item.href
-            });
         });
 
         wrapper.appendChild(link);
