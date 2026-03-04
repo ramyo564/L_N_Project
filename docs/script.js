@@ -23,6 +23,7 @@ const mermaidConfig = {
 };
 
 mermaid.initialize(mermaidConfig);
+let mermaidRenderCounter = 0;
 
 function byId(id) {
     return document.getElementById(id);
@@ -241,11 +242,12 @@ function renderHero() {
         mermaidContainer.setAttribute('data-mermaid-id', hero.diagramId);
     }
 
-    if (!metrics) {
-        return;
+    if (metrics) {
+        metrics.replaceChildren();
+        renderMetricLines(metrics, hero.metrics, '> Add metrics in templateConfig.hero.metrics');
     }
-    metrics.replaceChildren();
-    renderMetricLines(metrics, hero.metrics, '> Add metrics in templateConfig.hero.metrics');
+
+    renderHeroActions(hero, hero.sectionId || 'system-architecture');
 }
 
 function renderMetricLines(container, lines, fallbackText) {
@@ -259,9 +261,113 @@ function renderMetricLines(container, lines, fallbackText) {
 
     metricLines.forEach((line) => {
         const item = document.createElement('p');
-        const cleanLine = String(line).replace(/^>\s*/, '');
-        item.textContent = `> ${cleanLine}`;
+        item.className = 'metric-line';
+
+        const cleanLine = String(line).replace(/^>\s*/, '').trim();
+        const parsed = cleanLine.match(/^([^:]+):\s*(.+)$/);
+
+        if (!parsed) {
+            item.textContent = cleanLine;
+            container.appendChild(item);
+            return;
+        }
+
+        const label = document.createElement('span');
+        label.className = 'metric-label';
+        label.textContent = `${parsed[1]}:`;
+
+        const value = document.createElement('span');
+        value.className = 'metric-value';
+        value.textContent = parsed[2];
+
+        item.append(label, value);
         container.appendChild(item);
+    });
+}
+
+function renderHeroActions(heroConfig, sectionId) {
+    const actionsContainer = byId('hero-actions');
+    if (!actionsContainer) {
+        return;
+    }
+
+    actionsContainer.replaceChildren();
+    const actions = Array.isArray(heroConfig.actions) ? heroConfig.actions : [];
+    if (actions.length === 0) {
+        actionsContainer.style.display = 'none';
+        return;
+    }
+    actionsContainer.style.display = 'flex';
+
+    actions.forEach((item) => {
+        const requestedAction = String(item.action || '').trim().toLowerCase();
+        const targetSelector = String(item.target || item.href || '#').trim();
+        const targetId = targetSelector.replace(/^#/, '');
+
+        if (requestedAction === 'toggle_panel' && targetId) {
+            const action = document.createElement('button');
+            action.className = 'hero-action-btn';
+            action.type = 'button';
+
+            const resolveTarget = () => byId(targetId);
+            const syncState = () => {
+                const target = resolveTarget();
+                const expanded = Boolean(target && !target.classList.contains('is-panel-hidden'));
+                action.textContent = expanded
+                    ? (item.openLabel || 'SYSTEM DETAIL ARCHITECTURE 닫기')
+                    : (item.label || 'SYSTEM DETAIL ARCHITECTURE 보기');
+                action.setAttribute('aria-expanded', String(expanded));
+                action.setAttribute('aria-controls', targetId);
+            };
+
+            action.addEventListener('click', () => {
+                const target = resolveTarget();
+                if (!target) {
+                    return;
+                }
+
+                const nextHidden = !target.classList.contains('is-panel-hidden');
+                target.classList.toggle('is-panel-hidden', nextHidden);
+                target.setAttribute('aria-hidden', String(nextHidden));
+                if (!nextHidden) {
+                    void renderVisibleMermaidNodes(Array.from(target.querySelectorAll('.mermaid')));
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                syncState();
+            });
+
+            syncState();
+            setTrackData(action, {
+                area: 'hero',
+                component: 'button',
+                label: item.label || 'SYSTEM DETAIL ARCHITECTURE 보기',
+                action: item.action || 'toggle_panel',
+                destination: `#${targetId}`,
+                sectionId
+            });
+            actionsContainer.appendChild(action);
+            return;
+        }
+
+        const action = document.createElement('a');
+        action.className = 'hero-action-btn';
+        action.href = targetSelector;
+        action.textContent = item.label || 'OPEN_DETAIL';
+        if (!String(action.href).startsWith('#') && !String(action.href).startsWith('mailto:')) {
+            action.target = '_blank';
+            action.rel = 'noopener noreferrer';
+        }
+
+        setTrackData(action, {
+            area: 'hero',
+            component: 'button_link',
+            label: item.label || 'OPEN_DETAIL',
+            action: item.action || 'open_architecture_detail',
+            destination: action.href,
+            sectionId
+        });
+
+        actionsContainer.appendChild(action);
     });
 }
 
@@ -307,7 +413,15 @@ function renderTopPanels() {
 
     const panels = Array.isArray(templateConfig.topPanels) ? templateConfig.topPanels : [];
     panels.forEach((panel, index) => {
-        container.appendChild(createTopPanel(panel, index));
+        const panelElement = createTopPanel(panel, index);
+        panelElement.hidden = false;
+        if (panel.defaultHidden === true) {
+            panelElement.classList.add('is-panel-hidden');
+            panelElement.setAttribute('aria-hidden', 'true');
+        } else {
+            panelElement.setAttribute('aria-hidden', 'false');
+        }
+        container.appendChild(panelElement);
     });
 }
 
@@ -362,6 +476,56 @@ function createGroupDivider(group, sectionTheme) {
     return divider;
 }
 
+function createSectionToggleSummary(sectionConfig) {
+    const summary = document.createElement('summary');
+    summary.className = 'section-toggle-summary';
+
+    const title = document.createElement('span');
+    title.className = 'section-toggle-title';
+    title.textContent = sectionConfig.toggleLabel || `${sectionConfig.title ?? 'SECTION'} DETAILS`;
+
+    const hint = document.createElement('span');
+    hint.className = 'section-toggle-hint';
+    hint.textContent = sectionConfig.toggleHint || 'CLICK TO EXPAND';
+
+    summary.append(title, hint);
+    setTrackData(summary, {
+        area: 'service_section',
+        component: 'toggle',
+        label: title.textContent,
+        action: 'toggle_section',
+        destination: normalizeHashTarget(sectionConfig.id || ''),
+        sectionId: sectionConfig.id || ''
+    });
+
+    return summary;
+}
+
+function createGroupToggleSummary(group, sectionConfig) {
+    const summary = document.createElement('summary');
+    summary.className = 'group-toggle-summary';
+
+    const title = document.createElement('span');
+    title.className = 'group-toggle-title';
+    title.textContent = group.title || 'GROUP DETAILS';
+
+    const hint = document.createElement('span');
+    hint.className = 'group-toggle-hint';
+    hint.textContent = group.desc || 'CLICK TO EXPAND';
+
+    summary.append(title, hint);
+    setTrackData(summary, {
+        area: 'service_group',
+        component: 'toggle',
+        label: group.title || 'GROUP DETAILS',
+        action: 'toggle_group',
+        destination: normalizeHashTarget(sectionConfig?.id || ''),
+        sectionId: sectionConfig?.id || ''
+    });
+
+    return summary;
+}
+
 function createMetaLine(label, value) {
     if (!value) {
         return null;
@@ -411,7 +575,25 @@ function createHighlightList(items) {
     list.className = 'card-highlights';
     normalizedItems.forEach((item) => {
         const line = document.createElement('li');
-        line.textContent = item;
+        const parsed = String(item).match(/^(Choice|Result|Trade-off):\s*(.+)$/i);
+        if (!parsed) {
+            line.textContent = String(item);
+            list.appendChild(line);
+            return;
+        }
+
+        const label = document.createElement('span');
+        label.className = 'highlight-label';
+        label.textContent = `${parsed[1]}:`;
+
+        const value = document.createElement('span');
+        value.className = 'highlight-value';
+        if (parsed[1].toLowerCase() === 'result') {
+            value.classList.add('is-result');
+        }
+        value.textContent = parsed[2];
+
+        line.append(label, value);
         list.appendChild(line);
     });
     return list;
@@ -501,7 +683,22 @@ function createServiceCard(card, sectionConfig) {
 
     const description = document.createElement('p');
     description.className = 'card-desc';
-    description.textContent = card.overview ?? card.description ?? '';
+    const descriptionText = String(card.overview ?? card.description ?? '');
+    const parsedProblem = descriptionText.match(/^Problem:\s*(.+)$/i);
+    if (parsedProblem) {
+        description.classList.add('problem-line');
+        const problemLabel = document.createElement('span');
+        problemLabel.className = 'problem-label';
+        problemLabel.textContent = 'Problem:';
+
+        const problemValue = document.createElement('span');
+        problemValue.className = 'problem-value';
+        problemValue.textContent = parsedProblem[1];
+
+        description.append(problemLabel, problemValue);
+    } else {
+        description.textContent = descriptionText;
+    }
 
     const whyLine = createMetaLine('WHY', card.why);
     const roleLine = createMetaLine('ROLE', card.role);
@@ -575,10 +772,6 @@ function renderServiceSections() {
             const groupSection = document.createElement('div');
             groupSection.className = 'service-group';
 
-            if (group.title || group.desc) {
-                groupSection.appendChild(createGroupDivider(group, sectionConfig.theme));
-            }
-
             const groupGrid = document.createElement('div');
             groupGrid.className = 'service-grid';
 
@@ -587,11 +780,32 @@ function renderServiceSections() {
                 groupGrid.appendChild(createServiceCard(card, sectionConfig));
             });
 
-            groupSection.appendChild(groupGrid);
+            if (group.collapsible) {
+                const groupToggle = document.createElement('details');
+                groupToggle.className = 'group-toggle';
+                groupToggle.setAttribute('data-theme', sectionConfig.theme || 'blue');
+                groupToggle.open = group.defaultCollapsed !== true;
+                groupToggle.append(createGroupToggleSummary(group, sectionConfig), groupGrid);
+                groupSection.appendChild(groupToggle);
+            } else {
+                if (group.title || group.desc) {
+                    groupSection.appendChild(createGroupDivider(group, sectionConfig.theme));
+                }
+                groupSection.appendChild(groupGrid);
+            }
             groupsContainer.appendChild(groupSection);
         });
 
-        sectionWrapper.append(header, groupsContainer);
+        if (sectionConfig.collapsible) {
+            const sectionToggle = document.createElement('details');
+            sectionToggle.className = 'section-toggle';
+            sectionToggle.setAttribute('data-theme', sectionConfig.theme || 'blue');
+            sectionToggle.open = sectionConfig.defaultCollapsed !== true;
+            sectionToggle.append(createSectionToggleSummary(sectionConfig), groupsContainer);
+            sectionWrapper.append(header, sectionToggle);
+        } else {
+            sectionWrapper.append(header, groupsContainer);
+        }
         container.appendChild(sectionWrapper);
     });
 }
@@ -653,6 +867,9 @@ function buildDefaultNavigation() {
     let sequence = 0;
 
     topPanels.forEach((panel, index) => {
+        if (panel.showInNav === false) {
+            return;
+        }
         candidates.push({
             label: panel.navLabel || panel.panelTitle || `TOP_PANEL_${index + 1}`,
             target: normalizeHashTarget(panel.sectionId || `top-panel-${index + 1}`),
@@ -874,6 +1091,64 @@ function injectMermaidSources() {
     });
 
     return nodes;
+}
+
+function shouldDeferMermaidNode(node) {
+    if (!(node instanceof HTMLElement)) {
+        return true;
+    }
+    if (node.closest('.is-panel-hidden')) {
+        return true;
+    }
+    if (node.closest('details:not([open])')) {
+        return true;
+    }
+    return false;
+}
+
+async function renderMermaidNode(node) {
+    if (!(node instanceof HTMLElement)) {
+        return;
+    }
+    if (node.querySelector('svg')) {
+        return;
+    }
+
+    const tempClass = `mermaid-render-target-${mermaidRenderCounter += 1}`;
+    node.classList.add(tempClass);
+    try {
+        await mermaid.run({ querySelector: `.${tempClass}` });
+    } catch (error) {
+        console.error('Mermaid render failed for node:', node, error);
+        const failedId = node.getAttribute('data-mermaid-id') || 'unknown';
+        node.innerHTML = `<p style="margin:0;color:#ffb4b4;">Diagram render failed: ${failedId}</p>`;
+    } finally {
+        node.classList.remove(tempClass);
+    }
+}
+
+async function renderVisibleMermaidNodes(nodes) {
+    for (let index = 0; index < nodes.length; index += 1) {
+        const node = nodes[index];
+        if (shouldDeferMermaidNode(node)) {
+            continue;
+        }
+        // hidden 상태에서 실패한 다이어그램은 열릴 때 재시도한다.
+        await renderMermaidNode(node);
+    }
+}
+
+function setupDeferredMermaidRender() {
+    document.addEventListener('toggle', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLDetailsElement)) {
+            return;
+        }
+        if (!target.open) {
+            return;
+        }
+        void renderVisibleMermaidNodes(Array.from(target.querySelectorAll('.mermaid')));
+    }, true);
 }
 
 function setupMermaidModal() {
@@ -1237,8 +1512,8 @@ function setupMermaidModal() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     setSystemInfo();
-    renderHero();
     renderTopPanels();
+    renderHero();
     renderSkills();
     renderServiceSections();
     renderContact();
@@ -1247,20 +1522,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupMobileNav();
 
     const mermaidNodes = injectMermaidSources();
-    for (let index = 0; index < mermaidNodes.length; index += 1) {
-        const node = mermaidNodes[index];
-        const tempClass = `mermaid-render-target-${index}`;
-        node.classList.add(tempClass);
-        try {
-            await mermaid.run({ querySelector: `.${tempClass}` });
-        } catch (error) {
-            console.error('Mermaid render failed for node:', node, error);
-            const failedId = node.getAttribute('data-mermaid-id') || 'unknown';
-            node.innerHTML = `<p style="margin:0;color:#ffb4b4;">Diagram render failed: ${failedId}</p>`;
-        } finally {
-            node.classList.remove(tempClass);
-        }
-    }
+    await renderVisibleMermaidNodes(mermaidNodes);
+    setupDeferredMermaidRender();
 
     setupMermaidModal();
     setupScrollSpy();
