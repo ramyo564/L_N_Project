@@ -25,7 +25,13 @@ const mermaidConfig = {
 mermaid.initialize(mermaidConfig);
 let mermaidRenderCounter = 0;
 const analyticsSession = {
-    id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+    id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
+    pageType: 'portfolio',
+    pageStartedAt: Date.now(),
+    visibleStartedAt: document.visibilityState === 'hidden' ? 0 : Date.now(),
+    visibleDurationMs: 0,
+    maxScrollPercent: 0,
+    ended: false
 };
 
 function byId(id) {
@@ -58,6 +64,7 @@ function pushDataLayerEvent(eventName, payload = {}) {
         session_id: analyticsSession.id,
         page_path: window.location.pathname,
         page_title: document.title,
+        page_type: analyticsSession.pageType,
         ...payload
     });
 }
@@ -77,6 +84,48 @@ function detectLinkType(href) {
         return 'external';
     }
     return 'internal';
+}
+
+function inferDestinationPageType(destinationUrl) {
+    const raw = String(destinationUrl || '').trim();
+    if (!raw) {
+        return '';
+    }
+
+    const linkType = detectLinkType(raw);
+    if (linkType === 'anchor') {
+        return analyticsSession.pageType;
+    }
+    if (linkType === 'mailto') {
+        return 'contact';
+    }
+
+    let parsedUrl;
+    try {
+        parsedUrl = new URL(raw, window.location.href);
+    } catch {
+        return linkType === 'external' ? 'external' : analyticsSession.pageType;
+    }
+
+    if (parsedUrl.origin !== window.location.origin) {
+        return 'external';
+    }
+
+    const normalizedPath = String(parsedUrl.pathname || '').toLowerCase();
+    if (!normalizedPath || normalizedPath === '/') {
+        return analyticsSession.pageType;
+    }
+    if (
+        normalizedPath === '/portfolio/' ||
+        normalizedPath === '/portfolio/index.html' ||
+        normalizedPath === '/portfolio'
+    ) {
+        return 'portfolio_hub';
+    }
+    if (normalizedPath.includes('-portfolio') || normalizedPath.includes('/docs/')) {
+        return 'portfolio';
+    }
+    return analyticsSession.pageType;
 }
 
 function normalizeTrackingPayload(payload = {}) {
@@ -100,11 +149,17 @@ function normalizeTrackingPayload(payload = {}) {
     normalized.content_type = String(normalized.content_type ?? normalized.ui_area ?? 'ui_interaction');
     normalized.interaction_action = String(normalized.interaction_action ?? normalized.ui_action ?? 'click');
     normalized.element_type = String(normalized.element_type ?? normalized.ui_component ?? 'element');
+    normalized.page_type = String(normalized.page_type ?? analyticsSession.pageType);
+    normalized.source_page_type = String(normalized.source_page_type ?? analyticsSession.pageType);
 
     const resolvedLinkUrl = String(normalized.link_url ?? normalized.ui_destination ?? '');
     if (resolvedLinkUrl) {
         normalized.link_url = resolvedLinkUrl;
         normalized.link_type = String(normalized.link_type ?? detectLinkType(resolvedLinkUrl));
+        normalized.destination_url = String(normalized.destination_url ?? resolvedLinkUrl);
+        normalized.destination_page_type = String(
+            normalized.destination_page_type ?? inferDestinationPageType(resolvedLinkUrl)
+        );
     }
 
     normalized.source_event = String(normalized.source_event ?? 'ui_click');
@@ -114,6 +169,119 @@ function normalizeTrackingPayload(payload = {}) {
 
 function trackUiClick(payload = {}) {
     pushDataLayerEvent('select_content', normalizeTrackingPayload(payload));
+}
+
+function readScrollPercent() {
+    const documentElement = document.documentElement;
+    const maxScrollable = Math.max(0, documentElement.scrollHeight - window.innerHeight);
+    if (maxScrollable <= 0) {
+        return 100;
+    }
+    const ratio = (window.scrollY / maxScrollable) * 100;
+    return Math.max(0, Math.min(100, Math.round(ratio)));
+}
+
+function updateMaxScrollPercent() {
+    analyticsSession.maxScrollPercent = Math.max(analyticsSession.maxScrollPercent, readScrollPercent());
+}
+
+function stopVisibleTimer(timestamp = Date.now()) {
+    if (!analyticsSession.visibleStartedAt) {
+        return;
+    }
+    analyticsSession.visibleDurationMs += Math.max(0, timestamp - analyticsSession.visibleStartedAt);
+    analyticsSession.visibleStartedAt = 0;
+}
+
+function startVisibleTimer(timestamp = Date.now()) {
+    if (document.visibilityState === 'hidden' || analyticsSession.visibleStartedAt) {
+        return;
+    }
+    analyticsSession.visibleStartedAt = timestamp;
+}
+
+function endAnalyticsSession(reason = 'pagehide') {
+    if (analyticsSession.ended) {
+        return;
+    }
+    analyticsSession.ended = true;
+
+    updateMaxScrollPercent();
+    stopVisibleTimer();
+
+    const totalDurationMs = Math.max(0, Date.now() - analyticsSession.pageStartedAt);
+    const visibleDurationMs = Math.min(totalDurationMs, analyticsSession.visibleDurationMs);
+    const hiddenDurationMs = Math.max(0, totalDurationMs - visibleDurationMs);
+
+    trackUiClick({
+        source_event: 'lifecycle',
+        content_type: 'page_engagement',
+        item_id: 'portfolio_page',
+        item_name: document.title || 'Portfolio',
+        section_name: 'lifecycle',
+        interaction_action: 'end',
+        element_type: 'page',
+        element_label: 'PAGE_END',
+        duration_ms: totalDurationMs,
+        engagement_time_msec: visibleDurationMs,
+        hidden_duration_ms: hiddenDurationMs,
+        max_scroll_percent: analyticsSession.maxScrollPercent,
+        end_reason: reason,
+        value: Math.round(visibleDurationMs / 1000)
+    });
+}
+
+function setupAnalyticsLifecycle() {
+    updateMaxScrollPercent();
+
+    trackUiClick({
+        source_event: 'lifecycle',
+        content_type: 'page_engagement',
+        item_id: 'portfolio_page',
+        item_name: document.title || 'Portfolio',
+        section_name: 'lifecycle',
+        interaction_action: 'start',
+        element_type: 'page',
+        element_label: 'PAGE_START'
+    });
+
+    window.addEventListener('scroll', updateMaxScrollPercent, { passive: true });
+
+    document.addEventListener('visibilitychange', () => {
+        if (analyticsSession.ended) {
+            return;
+        }
+
+        if (document.visibilityState === 'hidden') {
+            stopVisibleTimer();
+            trackUiClick({
+                source_event: 'lifecycle',
+                content_type: 'page_visibility',
+                item_id: 'portfolio_page',
+                item_name: document.title || 'Portfolio',
+                section_name: 'lifecycle',
+                interaction_action: 'hidden',
+                element_type: 'page',
+                element_label: 'PAGE_HIDDEN'
+            });
+            return;
+        }
+
+        startVisibleTimer();
+        trackUiClick({
+            source_event: 'lifecycle',
+            content_type: 'page_visibility',
+            item_id: 'portfolio_page',
+            item_name: document.title || 'Portfolio',
+            section_name: 'lifecycle',
+            interaction_action: 'visible',
+            element_type: 'page',
+            element_label: 'PAGE_VISIBLE'
+        });
+    });
+
+    window.addEventListener('pagehide', () => endAnalyticsSession('pagehide'));
+    window.addEventListener('beforeunload', () => endAnalyticsSession('beforeunload'));
 }
 
 function setTrackData(element, payload = {}) {
@@ -1559,6 +1727,7 @@ function setupMermaidModal() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     setSystemInfo();
+    setupAnalyticsLifecycle();
     renderTopPanels();
     renderHero();
     renderSkills();
