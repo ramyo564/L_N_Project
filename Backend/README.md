@@ -79,8 +79,8 @@ graph LR
 | 고민 | 결정 | 이유 |
 |------|------|------|
 | 혼자 개발하므로 유지보수가 쉬워야 함 | **DDD + Hexagonal** 채택 | 도메인 로직 격리, 기능 확장 시 영향 범위를 줄이기 위한 구조 설계 |
-| 추후 MSA 분리 가능성 | 모놀리식 + 도메인 분리 | 현재는 모놀리식이 성능 우위, 나중에 MSA로 분리할 경우 비용 최소화 |
-| NoSQL 전환 가능성 | PostgreSQL 유지 | TODO 특성상 트랜잭션 중요, 읽기 비율이 높아 캐싱으로 해결 |
+| 서비스 경계 관리 | 모놀리식 + 도메인 분리 | 현재는 모놀리식이 성능 우위이고, 도메인 경계를 분리해 변경 비용을 낮춤 |
+| 저장소 선택 | PostgreSQL 유지 | TODO 특성상 트랜잭션 중요, 읽기 비율이 높아 캐싱으로 해결 |
 
 **리서치 결과**: 일반적인 웹 서비스는 읽기:쓰기 비율이 10:1 ~ 100:1이며¹, TODO 앱은 조회(목록 확인, 상태 체크) 빈도가 생성/수정보다 훨씬 높음² → Redis 캐싱 + TTL 1일 전략
 
@@ -124,7 +124,7 @@ graph LR
 
 - `OutboxEventAuthEntity`, `OutboxEventUserEntity`로 이벤트 저장
 - Auth 도메인에서 User 도메인으로 이벤트 발행 (같은 트랜잭션)
-- MSA 전환 고려 시 이벤트 발행 대상만 변경 (RabbitMQ → 대용량 메시징 큐 등)
+- 도메인 간 이벤트 발행 책임을 분리해 Auth/User 변경 영향 범위를 축소
 
 </details>
 
@@ -177,8 +177,6 @@ graph LR
 | Spring에서 AI API 호출 시 병목 | **FastAPI 분리** | 비동기 I/O, AI 생태계 최적화 |
 | 홈서버에서 AI 모델 직접 구동 어려움 | 외부 AI API + **벡터 DB** | 임베딩은 로컬, 추론은 외부 |
 | 벡터 DB 선택 | **Qdrant** | 무료 + Docker 이미지 관리 용이 |
-| 임베딩 작업 성능 | **Celery** 도입 예정 | 백그라운드 큐 처리 |
-| 향후 AI 고도화 | **컨텍스트 기반 분석 확장** | 데이터 축적 후 분석 품질 향상 고려 |
 
 <a id="lm-backend-fastapi-decision-tradeoff"></a>
 **의사결정 근거 (Why / Alternative / Trade-off / Constraint)**:
@@ -266,21 +264,8 @@ sequenceDiagram
 
 - **FastAPI**: `/api/v1/ai/*` 전용 엔드포인트
 - **Qdrant**: 임베딩 벡터 저장 및 유사도 검색
-- **인증 연동**: Spring verify API 의존 단일 경로 (`spring_verify_url` 필수, 로컬 JWT 폴백 미구현)
+- **인증 연동**: Spring verify API 의존 단일 경로 (`spring_verify_url` 필수)
 - **ML 모델 캐시**: Docker 볼륨으로 모델 재다운로드 방지
-
-</details>
-
-<details>
-<summary>🔍 AI 분석 파이프라인 확장 가능 고안</summary>
-
-**현재**: 임베딩 유사도 검색을 통한 기본 추천
-
-**확장성 고려**: 
-- 사용자 입력 기반 유사 케이스 검색을 통한 LLM Context 보강 가능 구조
-- 실패 TODO의 **심층 분석** 및 **동적 Task 세분화**를 위한 파이프라인 준비
-
-**선택 이유**: Python LLM 표준 프레임워크, Qdrant 네이티브 지원
 
 </details>
 
@@ -381,7 +366,7 @@ graph TD
 - **이미지 재사용**: 같은 Docker 이미지로 환경변수만 변경 → 디스크/메모리 절감
 - **낮은 복잡도(용어 명확화)**: 여기서 회피한 대상은 MSA에서 자주 필요한 교차 서비스 분산 트랜잭션 조정(2PC, 오케스트레이션 Saga)입니다.
 - **대신 채택한 패턴(상태 전이 카드와 분리된 통신 전략 맥락)**: 모놀리식 내부 Auth/User 경계는 Transactional Outbox + 이벤트 소비 체인(Choreography 성격)으로 결과적 일관성을 관리합니다.
-- **확장성 보장**: 향후 트래픽 증가 시 컨테이너만 분리하면 MSA 전환 가능
+- **역할 분리**: 같은 이미지를 API/Worker로 나눠 읽기/쓰기 리소스 경합을 줄임
 
 ### ERD (Entity Relationship Diagram)
 
@@ -1014,7 +999,7 @@ group('Write operations', () => {
 
 | 분리 이유 | 설명 |
 |----------|------|
-| **스케일 아웃** | API/Worker 독립 확장 가능 (현재는 단일 서버지만 미래 대비) |
+| **역할별 자원 분리** | API/Worker를 분리 배치해 읽기/쓰기 리소스 경합을 줄임 |
 | **장애 복원력** | DB 장애 시에도 API는 정상 응답, MQ에 메시지 보관 |
 | **피크 흡수** | 트래픽 폭증 시 MQ가 버퍼 역할 → API 응답 지연 방지 |
 | **역할 분리** | 읽기(API)와 쓰기(Worker)의 리소스 경합 최소화 |
@@ -1224,7 +1209,7 @@ MQ 수신 → 배치 그룹핑 → DB INSERT/UPDATE (수~수십 ms) → 캐시 �
 
 ```
 [해결 시나리오]
-1. API Server: Pending Key 생성 (project:pending:{id} = userId, TTL 5초)
+1. API Server: Pending Key 생성 (project:pending:{id} = userId, TTL 600초)
 2. 클라이언트: POST /projects/{id}/tasks
 3. API Server: 소유권 체크 → DB에 없음 → Pending Key 확인 → 소유자 일치 → 허용 ✅
 4. Worker: DB 저장 완료 (비동기)
@@ -1254,7 +1239,7 @@ public void createProject(CreateProjectCommand command) {
 public void savePendingProject(String projectId, String userId) {
     String pendingKey = "project:pending:" + projectId;
     redisTemplate.opsForValue().set(pendingKey, userId, 
-        Duration.ofSeconds(5));  // TTL 5초
+        Duration.ofSeconds(600));  // TTL 600초
 }
 
 public boolean isPending(String projectId, String userId) {
@@ -1278,12 +1263,12 @@ public boolean isOwner(UUIDv7 projectId, UUIDv7 userId) {
 }
 ```
 
-**왜 TTL 5초인가?**
-- Worker가 DB 저장하는 데 보통 100ms 이내
-- 네트워크 지연, MQ 지연 고려해도 5초면 충분
+**왜 TTL 600초인가?**
+- 비동기 저장, 재시도, 재배포 직후 지연까지 포함해 Pending 소유권 보존 시간을 보수적으로 확보
+- 홈서버 환경에서 짧은 순간 장애나 재기동이 있어도 Optimistic UI 경로가 바로 깨지지 않도록 완충 구간 유지
 - **TTL 만료 후에도 체크 순서는 동일** (Pending → Cache → DB)
   - 다만 Pending Key가 없으므로 1단계에서 `false` 반환 → 다음 단계 진행
-  - 5초 후에는 Worker가 DB 저장을 완료했으므로 3단계에서 정상 조회됨
+  - TTL 만료 후에는 Worker가 DB 저장을 완료했으므로 3단계에서 정상 조회됨
 
 **왜 Redis를 먼저 체크하는가?**
 - DB 커넥션 점유 시간 최소화
@@ -1772,7 +1757,7 @@ public void handleBatch(List<Message> messages) {
 > **"Trade-off 를 명확히 인지하고 선택하기"**
 
 - Outbox 패턴 전면 적용 시 쓰기 2배 → 홈서버 성능상 부분 적용으로 타협
-- Pending Cache TTL 5초는 Worker 처리 시간 + 여유를 고려한 경험적 값
+- Pending Cache TTL 600초는 비동기 저장 경로의 일시 지연과 재배포 상황까지 흡수하기 위한 운영값
 - **완벽한 설계보다 현실적인 제약 안에서 최선의 선택**
 
 ### 1인 개발자 관점
@@ -1784,21 +1769,3 @@ public void handleBatch(List<Message> messages) {
 - **지금 당장 빠른 것보다 6개월 후에도 이해할 수 있는 코드**
 
 ---
-
-## 🔮 향후 개선 계획
-
-### 🔥 우선순위 높음
-- [ ] **Rate Limiting 도입** (Spring) - API 남용 방지, 보안 강화
-- [ ] **Slice 페이지네이션 도입** (Spring) - 대용량 데이터 조회 최적화
-- [ ] **기한설정, 미리알림, 반복기능등 기능 도입** (Spring) - 서비스 고도화
-
-### 📌 중간 우선순위
-- [ ] **LangChain + 벡터 DB 활용** (FastAPI) - AI 기능 고도화
-- [ ] **Celery 도입** (FastAPI) - 임베딩 작업 백그라운드 처리
-- [ ] **낙관적 락 충돌 시 재시도 로직** (Spring + Frontend) - `@Version` 충돌 시 409 Conflict 응답 + 프론트엔드 자동 재시도(1~2회)
-- [ ] Outbox 패턴 전면 적용 (Project/Task/SubTask 도메인)
-
-### 💡 장기 계획
-- [ ] Read Replica 도입 (읽기 성능 분리)
-- [ ] GraphQL 도입 (프론트엔드 요청 최적화)
-- [ ] Spring Modulith 적용 (모듈 간 의존성 관리)

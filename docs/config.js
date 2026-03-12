@@ -168,8 +168,8 @@ const mapCards = (ids) => ids.map((id) => {
 
 export const templateConfig = {
     system: {
-        documentTitle: 'Yohan | System Architect',
-        systemName: 'YOHAN_SYSTEM_V.3.2'
+        documentTitle: 'Yohan | Life Navigation Architecture Dashboard',
+        systemName: 'LIFE_NAVIGATION_ARCHITECTURE_V.3.2'
     },
 
     hero: {
@@ -178,7 +178,7 @@ export const templateConfig = {
         panelUid: 'ID: LIFE-NAV-01',
         diagramId: 'architecture-simple',
         metrics: [
-            'POSITION: Backend-first System Architect (Upgrade Todo 서비스 백엔드)',
+            'POSITION: Backend-first System Architect (Life Navigation backend)',
             'PROBLEM: 고부하 요청에서 지연 급증과 정합성 리스크가 누적되었습니다.',
             'CHOICE: Spring Hexagonal + API/Worker 분리 + FastAPI AI 경계 분리를 적용했습니다.',
             'RESULT: READ p95 975ms -> 141ms, WRITE p95 1.9s -> 126ms (@500VU).',

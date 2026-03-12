@@ -2,7 +2,7 @@
 
 > 백엔드 성능·병목 검증을 위한 최소 범위의 클라이언트 구현
 
-React 기반의 모노레포 아키텍처로 구성되어 있으며, 현재 웹 버전이 완료되었고 모바일(React Native) 확장 준비 중
+React 기반의 모노레포 아키텍처로 구성되어 있으며, 현재는 웹 앱과 shared Core 패키지를 중심으로 운영하고 있습니다.
 
 📅 **개발 기간**: 2025.04 ~ 현재 (개인 프로젝트)
 
@@ -10,7 +10,7 @@ React 기반의 모노레포 아키텍처로 구성되어 있으며, 현재 웹 
 | 지표 | Before → After | 개선율 |
 |------|----------------|--------|
 | **빌드 시간** | 4분 10초 → 45초 | **-82%** |
-| **디스크 사용량** | 2.1GB → 460MB | **-78%** |
+| **패키지 디스크 효율** | npm 기준 → pnpm workspace(web-only) | **약 -25% (추론)** |
 | **환경 구축 시간** | 30분 → 2분 | **-95%** |
 | **런타임 에러** | 자주 발생 → 거의 없음 | **-90%** |
 | **코드 재사용률** | 0% → 100% | **+100%** |
@@ -33,19 +33,19 @@ React 기반의 모노레포 아키텍처로 구성되어 있으며, 현재 웹 
 
 ## 🧭 문제 해결 과정에서의 기술 선택
 
-### 1. 크로스 플랫폼 전략 (웹 우선 개발)
+### 1. 웹 우선 개발과 Core 분리
 
 | 고민 | 결정 | 이유 |
 |------|------|------|
-| 프론트 지식 부족 | **React 생태계** + JavaScript 선택 | 네이티브 없이 웹/모바일/데스크탑 모두 커버 가능 |
-| Android/iOS 네이티브 각각 개발 필요? | **React Native + Electron** | JavaScript 한 번 배우면 모든 플랫폼 대응 |
+| 프론트 지식 부족 | **React 생태계** + JavaScript 선택 | 빠르게 화면 흐름을 검증하고 디버깅 도구를 바로 활용 가능 |
 | 빌드시 JavaScript의 타입 안전성 부족, IDE 지원 미흡 | **TypeScript 전환** | 컴파일 타임 에러 검출, 리팩토링 용이 |
-| **어떤 플랫폼부터 개발?** | **웹 우선 개발** | 빠른 프로토타이핑, Core 로직 검증 후 RN 확장 |
+| UI와 비즈니스 로직 혼재 위험 | **Core 패키지 분리** | 도메인/상태/입출력 로직을 UI에서 분리해 유지보수성 확보 |
+| **어떤 범위까지 구현?** | **웹 우선 개발** | 실제 API 흐름 검증에 필요한 최소 범위에 집중 |
 
 **웹 우선 개발의 타당성**:
-- **개발 속도**: 웹은 저장 → 새로고침 즉시 확인, RN은 빌드 시간 필요
+- **개발 속도**: 웹은 저장 → 새로고침 즉시 확인 가능해 피드백 루프가 짧음
 - **디버깅 편의성**: Chrome DevTools, Redux DevTools 등 웹 도구가 압도적으로 편리
-- **Core 패키지 검증**: 웹에서 먼저 `domain`, `store`, `api` 구조 확립 → RN에서 100% 재사용
+- **Core 패키지 검증**: 웹에서 먼저 `domain`, `store`, `api` 구조를 고정해 UI와 비즈니스 로직 경계를 분리
 - **배포 용이성**: URL 접속만으로 테스트 가능, 앱스토어 등록 및 설치 불필요
 - **활용성**: 실제 활용 및 기능성 바로 확인 가능
 
@@ -53,15 +53,9 @@ React 기반의 모노레포 아키텍처로 구성되어 있으며, 현재 웹 
 <summary>🔍 구현 결과</summary>
 
 - **Web**: Vite + React 19 ✅ 완료
-- **Mobile**: React Native (Core 재사용 예정)
-- **Desktop**: Electron (필요 시 추가)
 - **Core 패키지**: 모든 플랫폼에서 100% 재사용 설계
 
 </details>
-
----
-
-- **Core 패키지**: 모든 플랫폼에서 100% 재사용 설계
 
 ---
 
@@ -80,7 +74,7 @@ React 기반의 모노레포 아키텍처로 구성되어 있으며, 현재 웹 
 **RTK 선택의 전략적 의사결정 (Real-world Engineering)**:
 
 - **로직 재사용성 및 생산성**: Zustand와 같은 라이브러리는 빠른 초기 개발 속도를 보장하지만, 구조적 유연성으로 인해 규모가 커질수록 유지보수 부담이 증가할 수 있습니다. 반면 RTK는 **명확한 규칙(Boilerplate)을 통해 예측 가능한 코드**를 유도하여, 협업 시 신뢰할 수 있는 코어를 구축합니다.
-- **플랫폼 독립적 설계 (Core separation)**: 모노레포 환경에서 비즈니스 로직(Core)은 외부 환경(React, RN, Electron)으로부터 분리되어 보호되어야 합니다. Redux는 프레임워크 색채가 가장 옅은 **순수 자바스크립트 상태 머신**으로 동작하므로, 안정적인 코어를 기반으로 플랫폼 확장 시 발생할 수 있는 영향을 최소화합니다.
+- **플랫폼 독립적 설계 (Core separation)**: 모노레포 환경에서 비즈니스 로직(Core)은 UI 프레임워크와 런타임으로부터 분리되어 보호되어야 합니다. Redux는 프레임워크 색채가 가장 옅은 **순수 자바스크립트 상태 머신**으로 동작하므로, 안정적인 코어를 기반으로 화면 계층 변경 시 발생할 수 있는 영향을 최소화합니다.
 - **복잡한 비즈니스 워크플로우 제어**: AI 추천 기능을 통해 여러 도메인(Task, Project, User)의 상태가 복잡하게 얽히는 상황에서, `listenerMiddleware`를 활용하여 사이드 이펙트를 한곳에서 예측 가능한 코드로 관리
 - **통합된 서버 상태 관리**: RTK Query는 Store와 깊게 통합되어 있어, **Optimistic UI** 구현 시 전역 상태(예: 사용자 경험 점수, 전체 통계 등)와 즉각적으로 연동하여 스트레스 없는 UX를 제공
 
@@ -136,7 +130,7 @@ React 기반의 모노레포 아키텍처로 구성되어 있으며, 현재 웹 
 |------|------|------|
 | 빌드 시간 4분 이상 소요 | **Turborepo 캐싱** | 변경된 패키지만 재빌드 |
 | 의존성 설치 느림, 디스크 많이 사용 | **pnpm workspaces** | 중복 의존성 제거, 심볼릭 링크 |
-| React Native/Electron 추가 시 빌드 더 느려질 것 | **캐시 재사용 전략** | 플랫폼 추가해도 빌드 시간 유지 |
+| 패키지 수가 늘수록 빌드 병목 발생 | **캐시 재사용 전략** | 변경 범위만 다시 빌드해 반복 비용 최소화 |
 
 **기술 선택**: 모노레포 규모가 커질수록 pnpm + Turborepo 조합의 효과가 극대화됨
 
@@ -218,22 +212,16 @@ pnpm build
 <a id="lm-frontend-monorepo-architecture"></a>
 ## 🏗️ 아키텍처 (Monorepo)
 
-`Web`, `Mobile(React Native)`, `Desktop(Electron)` 등 다양한 플랫폼이 `Core` 패키지의 비즈니스 로직을 공유하는 구조
+현재 공개 범위는 `Web` 앱이 `Core` 패키지의 비즈니스 로직을 사용하는 구조입니다.
 
 ```mermaid
 graph TD
     subgraph Apps ["📱 Apps (플랫폼별 진입점)"]
         Web["web<br/>(Vite + React)"]
-        Mobile["mobile<br/>(React Native)<br/> -구현 예정-"]
-        Desktop["desktop<br/>(Electron)<br/> -구현 예정-"]
-        WebNext["web-nextjs<br/>(Next.js)<br/> -구현 예정-"]
     end
 
     subgraph Platform ["🔌 Platform (플랫폼 어댑터)"]
         PlatReact["react<br/>(React 공통)"]
-        PlatRN["mobile-rn<br/>(RN 전용)"]
-        PlatElectron["desktop-electron<br/>(Electron 전용)"]
-        PlatNext["web-next<br/>(Next.js 전용)"]
     end
 
     subgraph Core ["🧠 Core (순수 비즈니스 로직)"]
@@ -251,15 +239,9 @@ graph TD
 
     %% Apps → Platform
     Web --> PlatReact
-    Mobile --> PlatRN
-    Desktop --> PlatElectron
-    WebNext --> PlatNext
 
     %% Platform → Core (전체 Core 패키지 공유)
     PlatReact --> Core
-    PlatRN --> Core
-    PlatElectron --> Core
-    PlatNext --> Core
 
     %% Core 내부 의존성
     Usecases --> Domain
@@ -311,17 +293,17 @@ graph LR
 
 | 레이어 | 패키지 | 설명 |
 |-------|--------|------|
-| **Apps** | `web`, `mobile`, `desktop`, `web-nextjs` | 플랫폼별 진입점 및 라우팅 |
-| **Platform** | `react`, `mobile-rn`, `desktop-electron`, `web-next` | 플랫폼 종속 어댑터 |
+| **Apps** | `web` | 현재 공개 범위의 웹 진입점 및 라우팅 |
+| **Platform** | `react` | 웹 플랫폼 어댑터 |
 | **Core** | `domain`, `usecases`, `store`, `api`, `services`, `hooks`, `types`, `utils`, `assets`, `infrastructure` | 순수 비즈니스 로직 (플랫폼 독립) |
 
-### Core 패키지 재활용
+### Core 패키지 역할
 
-| 패키지 | React 의존 | RN/Electron/Next.js 재활용 |
-|--------|-----------|---------------------------|
-| `domain`, `usecases`, `types`, `utils` | ❌ 없음 | ✅ 100% 재활용 |
-| `api`, `store`, `hooks` | ⚠️ Redux | ✅ 재활용 가능 (Redux는 플랫폼 독립) |
-| `assets`, `infrastructure` | ❌ 없음 | ✅ 100% 재활용 |
+| 패키지 | React 의존 | 현재 역할 |
+|--------|-----------|-----------|
+| `domain`, `usecases`, `types`, `utils` | ❌ 없음 | 핵심 비즈니스 로직과 타입 정의 |
+| `api`, `store`, `hooks` | ⚠️ Redux | 웹 앱의 상태 관리와 API 흐름 제어 |
+| `assets`, `infrastructure` | ❌ 없음 | 공용 리소스와 인프라 어댑터 |
 
 ---
 
@@ -426,10 +408,10 @@ graph TD
 | 항목 | Before | After | 개선 |
 |------|--------|-------|------|
 | **빌드 시간** | 4분 10초 | 45초 | **82% 단축** |
-| **디스크 사용량** | 2.1GB | 460MB | **78% 절감** |
+| **패키지 디스크 효율** | npm 기준 | pnpm workspace(web-only) | **약 25% 절감 (추론)** |
 | **환경 구축 시간** | 30분 | 2분 | **95% 단축** |
 
-**문제**: 프로젝트 규모가 커짐에 따라 빌드 시간이 4분 이상 소요되고, React Native/Electron 추가 시 더 느려질 전망
+**문제**: 프로젝트 규모가 커짐에 따라 빌드 시간이 4분 이상 소요되고, 패키지 수가 늘수록 반복 빌드 비용이 커짐
 
 **해결**: pnpm workspaces + Turborepo 캐싱 전략
 
@@ -577,14 +559,14 @@ createProject: build.mutation({
 
 - ESLint 레이어 규칙 설정이 처음엔 번거롭지만, 순환참조를 코딩 시점에 방지
 - 모노레포 구조가 복잡해 보이지만, Core 패키지 재사용으로 플랫폼 확장 비용 최소화
-- **1인 개발 최적화**: 새로운 플랫폼(모바일, 데스크탑) 추가 시 UI 레이어만 작성하면 되도록 비즈니스 로직(Core)을 100% 분리하여, 혼자서도 대규모 서비스를 안정적으로 운영할 수 있는 구조를 확립함.
+- **1인 개발 최적화**: UI 레이어와 비즈니스 로직(Core)을 분리해 화면 변경이 생겨도 핵심 로직 수정 범위를 줄임.
 - **처음부터 구조를 잡으면 나중에 "왜 이렇게 했지?" 고민 없음**
 
 ### 도구 선택
 
 > **"상황에 맞는 도구를 선택하기"**
 
-- npm/yarn → pnpm 전환으로 디스크 78% 절감, 설치 속도 대폭 향상
+- npm/yarn → pnpm 전환으로 web-only 기준 패키지 디스크 사용량을 약 25% 줄이고, 설치 체감 속도를 개선
 - Lerna/Nx -> Turborepo 러닝커브 및 필요한 기능 고려해서 채택 -> 캐싱으로 반복 빌드 시간을 수 초로 단축
 - **도구 전환 비용 vs 장기 이득을 계산하고 결정**
 
@@ -605,24 +587,3 @@ createProject: build.mutation({
 - **자동화할 수 있는 건 자동화하고, 사람은 창의적 작업에 집중**
 
 ---
-
-## 🔮 향후 개선 계획
-
-### 🔥 우선순위 높음
-- [ ] **React Native 앱 구현** - 개인 사용 편의성 향상 (모바일에서 웹보다 UX 우수)
-  - Core 패키지 100% 재사용
-  - Detox E2E 테스트 환경 구축
-- [ ] **테스트 커버리지 확대**
-  - Web: Cypress E2E (핵심 사용자 플로우)
-  - Core: Vitest 단위 테스트 (플랫폼 공유)
-- [ ] **회원정보 관리 기능**
-  - 비밀번호 변경, 계정삭제, 회원정보 수정 (사실상 지금 당장은 혼자 사용하는거라 중요도 낮음)
-
-### 📌 중간 우선순위
-- [ ] **Storybook 컴포넌트 문서 완성** - UI 컴포넌트 문서화
-- [ ] **RN용 Storybook 별도 설정** - 모바일 컴포넌트 문서화
-
-### 💡 장기 계획 (필요 시)
-- [ ] Electron 데스크탑 앱 (현재 웹으로 충분)
-- [ ] Next.js SSR (커뮤니티 기능 시 검토)
-- [ ] 성능 모니터링 (Web Vitals) 도입

@@ -84,7 +84,7 @@
 > ※ 프론트엔드는 실제 API 사용 흐름과 사용자 요청 패턴을 재현하기 위한 범위로 구현되었습니다.
 
 - **Zero-Latency UX**: **Optimistic UI + UUIDv7** 전략으로 응답 지연 최소화 체험 제공
-- **로직 재사용성 극대화**: 비즈니스 로직(Core)을 플랫폼 독립적으로 설계하여 **웹/앱 로직 100% 공유**
+- **로직 재사용성 극대화**: 비즈니스 로직(Core)을 UI에서 분리해 **웹 흐름과 공용 로직 경계 유지**
 - **빌드 효율성 확보**: Turborepo 빌드 시간 **82% 단축**
 - 👉 [Frontend 상세 보기](./Frontend/README.md)
 
@@ -96,7 +96,7 @@
 > **0원 운영의 리스크 대응**:
 > - 🔒 **보안**: 외부 SSH 차단 (VPN Only), Cloudflare WAF/DDoS 방어
 > - 📊 **모니터링**: Prometheus + Grafana + Slack 알림 (5xx > 5%, p95 > 800ms)
-> - 🔄 **복구**: 트래픽 임계점 도달 시 클라우드 재전환 가능한 구조 (Docker Compose 기반)
+> - 🔄 **복구**: Docker Compose 재배포 + 관측 체계 기반으로 장애 대응 경로 유지
 
 ### 🔗 Dashboard LearnMore Quick Links
 - [Backend Dashboard Index](./Backend/README.md#dashboard-learnmore-index)
@@ -107,7 +107,7 @@
 
 > ※ AI 기능은 서비스 품질 개선을 위한 분석 파이프라인의 일부로 분리 구성되어 있습니다.
 
-- 외부 LLM 활용 + Qdrant VectorDB로 실패 패턴 구조화 (AI 분석 파이프라인 확장 가능 구조로 설계)
+- 외부 LLM 활용 + Qdrant VectorDB로 실패 패턴 구조화
 - 👉 [Backend README - AI 서비스 분리](./Backend/README.md#4-ai-서비스-분리-fastapi)에서 상세 확인
 
 ---
@@ -153,11 +153,6 @@
 
 👉 **[7단계 상세 분석 및 k6 테스트 결과 확인](./Backend/README.md#1-아키텍처-진화-7단계-성능-최적화)**
 
-### 현재 구조에서 고려한 다음 단계
-- 단일 노드 구축에서 트래픽 증가 상황을 가정한 시스템 구조 확장성 고려
-- 메시징 병목을 대비한 구조적 확장 여지 확보
-- 실제 사용자 행동 데이터 기반 튜닝은 향후 과제
-
 ### Storage Strategy & Scalability
 
 현재 서비스는 PostgreSQL + Redis 기반으로 운영되고 있습니다.
@@ -166,7 +161,7 @@
 - **읽기 병목 구간**은 Redis Cache-Aside와 `@Cacheable` 선행 경계로 분리해 DB 커넥션 점유를 줄이고, READ p95 975ms -> 141ms를 달성했습니다.
 - **쓰기 병목/정합성 리스크 구간**은 Redis Pending + RabbitMQ + Worker + Retry/DLQ로 분리해 WRITE p95 1.9s -> 126ms 개선과 실패 복구 경로를 확보했습니다.
 
-향후 데이터 특성에 따른 저장소 최적화가 가능한 구조로 설계되었습니다.
+현재는 PostgreSQL, Redis, RabbitMQ가 각자 맡는 역할을 분리해 읽기/쓰기 병목과 정합성 문제를 제어하는 구조로 운영하고 있습니다.
 
 ---
 
@@ -190,7 +185,6 @@ graph TD
     subgraph Client [사용자 환경]
         User[사용자]
         Browser[웹 브라우저]
-        Mobile["모바일 앱 (개발예정)"]
     end
 
     subgraph Infrastructure ["DevOps & Network (Dev)"]
@@ -201,7 +195,6 @@ graph TD
 
     subgraph FE [Frontend Monorepo]
         Web["Web App (React)"]
-        RN["Mobile App (React Native) 개발 예정"]
         Core["Core 패키지 (비즈니스 로직)"]
     end
 
@@ -221,15 +214,12 @@ graph TD
     space1 ~~~ API
 
     User --> Browser
-    User --> Mobile
     Browser --> CDN
-    Mobile --> CDN
     CDN --> LB
     LB --> Web
     LB --> API
 
     Web --> Core
-    RN --> Core
 
     API --> DB
     API --> Cache
@@ -246,7 +236,6 @@ graph TD
 
 ### Frontend <-> Backend 통신
 - **REST API**: 기본적인 CRUD 작업 및 실시간성이 필요한 조회 통신
-- **WebSocket (예정)**: 실시간 알림 및 상태 업데이트
 - **Optimistic UI**: 비동기 처리를 위한 프론트엔드 낙관적 업데이트 지원
 
 ### Backend 처리 흐름
