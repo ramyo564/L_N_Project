@@ -258,7 +258,7 @@ export const templateConfig = {
             id: 'load-reliability-services',
             title: 'LOAD_AND_RELIABILITY',
             navLabel: 'LOAD_RELIABILITY',
-            summary: 'PROBLEM: 스케일 테스트 중 튜닝 회귀와 숨은 실패 모드가 반복되었습니다. CHOICE: 재현 가능한 k6 프로파일 + 분리된 stress lifecycle + incident runbook을 구축했습니다. RESULT: READ p95 975ms -> 141ms, stress 검증 재현성을 확보했습니다.',
+            summary: 'PROBLEM: 스케일 테스트 중 튜닝 회귀와 숨은 실패 모드가 반복되었습니다. CHOICE: 재현 가능한 k6 프로파일 + 분리된 stress lifecycle + 반복 검증 흐름을 구축했습니다. RESULT: READ p95 975ms -> 141ms, stress 검증 재현성을 확보했습니다.',
             theme: 'orange',
             cardVisualHeight: '265px',
             cardClass: 'devops-card',
