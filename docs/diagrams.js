@@ -1,5 +1,5 @@
 export const diagrams = {
-        'architecture-simple': `
+    'architecture-simple': `
             graph LR
             CLIENT[Client]
             EDGE[Cloudflare + Nginx]
@@ -17,7 +17,7 @@ export const diagrams = {
             classDef accent fill:#161b22,stroke:#58a6ff,color:#58a6ff
             class CLIENT,EDGE,SPRING,FASTAPI accent
         `,
-        'architecture': `
+    'architecture': `
             graph LR
             subgraph Client [Client]
                 Browser[Web Browser]
@@ -75,8 +75,8 @@ export const diagrams = {
             classDef accent fill:#161b22,stroke:#58a6ff,color:#58a6ff
             class Browser,API,FAPI,WORKER accent
         `,
-        // Backend Services
-        'backend-spring-hex': `
+    // Backend Services
+    'backend-spring-hex': `
             graph TB
             In[adapter/in web and messaging] --> App[application command query service]
             App --> Domain[domain model event service]
@@ -92,7 +92,7 @@ export const diagrams = {
             class Out,Infra g
         `,
 
-        'backend-spring-auth': `
+    'backend-spring-auth': `
             graph TB
             Client[Client] --> Login[POST /api/v1/auth/login]
             Login --> LCH[LoginCommandHandler]
@@ -121,7 +121,32 @@ export const diagrams = {
             class RTS,Cache,BL,Rotate,Revoke g
         `,
 
-        'backend-spring-domain-rules': `
+    'backend-spring-oauth2': `
+            graph TB
+            Client[Client] --> Req[GET /api/v1/auth/oauth2/provider]
+            Req --> Provider1[Google]
+            Req --> Provider2[Kakao]
+            Req --> Provider3[Naver]
+            Provider1 --> Code[Callback with Auth Code]
+            Provider2 --> Code
+            Provider3 --> Code
+            Code --> Strategy[OAuth2 Login Strategy DI]
+            Strategy --> Fetch[Fetch User Profile]
+            Fetch --> NaverCheck{Naver Whitelist Check?}
+            NaverCheck -- Block --> Reject[403 Forbidden]
+            NaverCheck -- Pass --> MapUser[Map to Internal AppUser]
+            MapUser --> JWT[Issue JWT & Session]
+            JWT --> Success[Login Success]
+
+            classDef b fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+            classDef o fill:#161b22,stroke:#d29922,color:#c9d1d9
+            classDef g fill:#161b22,stroke:#238636,color:#c9d1d9
+            class Client,Req,Code,Strategy,Fetch,MapUser b
+            class Provider1,Provider2,Provider3,NaverCheck,Reject o
+            class JWT,Success g
+        `,
+
+    'backend-spring-domain-rules': `
             graph TB
             Req[Task and Project commands] --> Access[ProjectAccessVerifier]
             Access --> Pending[ProjectPendingCachePort isPending]
@@ -144,7 +169,7 @@ export const diagrams = {
             class Deleted,Dup,Idem g
         `,
 
-        'backend-spring-state-management': `
+    'backend-spring-state-management': `
             graph TB
             subgraph Task [Task Status]
                 TP[PENDING] --> TI[IN_PROGRESS]
@@ -180,7 +205,7 @@ export const diagrams = {
             class TDone,TClear,PDone,PUndo g
         `,
 
-        'backend-spring-api-write': `
+    'backend-spring-api-write': `
             graph TB
             FE[Frontend] --> CTRL[TaskController]
             CTRL --> ACK[HTTP 202 Accepted]
@@ -198,7 +223,7 @@ export const diagrams = {
             class RC g
         `,
 
-        'backend-spring-worker-consume': `
+    'backend-spring-worker-consume': `
             graph TB
             Q[todo.task.queue] --> LISTENER[TaskEventListener batch]
             LISTENER --> CRUD[TaskCrudEventHandler]
@@ -220,7 +245,7 @@ export const diagrams = {
             class DB,RC,EVT g
         `,
 
-        'backend-spring-troubleshooting': `
+    'backend-spring-troubleshooting': `
             graph TB
             Issue1[MVC plus WebFlux mixed path overhead] --> Fix1[Converged to MVC centered runtime path]
             Issue2[Redis shared connection contention under load] --> Fix2[Split API and Worker Redis pool profiles]
@@ -238,7 +263,7 @@ export const diagrams = {
             class Result g
         `,
 
-        'backend-fastapi-analyze': `
+    'backend-fastapi-analyze': `
             graph TB
             REQ[POST /api/v1/ai/analyze/failure] --> AUTH[get_current_user]
             AUTH --> VERIFY[Spring /api/auth/verify]
@@ -259,7 +284,7 @@ export const diagrams = {
             class REDIS,QDRANT g
         `,
 
-        'backend-fastapi-auth': `
+    'backend-fastapi-auth': `
             graph TB
             Client[Client] --> Header[Authorization Bearer token]
             Header --> Dep[get_current_user dependency]
@@ -282,7 +307,7 @@ export const diagrams = {
             class Err401,Err503,Missing g
         `,
 
-        'backend-fastapi-domain-rules': `
+    'backend-fastapi-domain-rules': `
             graph TB
             AI[AI response payload] --> Normalize[RecommendationCollection from_ai_response]
             Normalize --> HasList{recommendations list valid}
@@ -311,7 +336,7 @@ export const diagrams = {
             class MapDict,Fallback,Invalid,OutRange,MappingErr g
         `,
 
-        'backend-fastapi-state-management': `
+    'backend-fastapi-state-management': `
             graph TB
             AnalyzeReq[POST analyze failure] --> Create[create_analysis_session]
             Create --> CacheSet[(Redis ai_session status analyzing ttl 3600)]
@@ -337,7 +362,7 @@ export const diagrams = {
             class CacheSet,SessionReady,Update,Invalid g
         `,
 
-        'backend-fastapi-feedback': `
+    'backend-fastapi-feedback': `
             graph TB
             REQ[POST /api/v1/ai/analyze/feedback] --> AUTH[get_current_user]
             AUTH --> VERIFY[Spring /api/auth/verify]
@@ -357,7 +382,7 @@ export const diagrams = {
             class SESSION,UPDATE g
         `,
 
-        'backend-fastapi-troubleshooting': `
+    'backend-fastapi-troubleshooting': `
             graph TB
             Issue1[verify access timeout or upstream auth error] --> Fix1[get_current_user handles timeout and schema errors]
             Issue2[session missing or expired in feedback] --> Fix2[invalid_session path with safe early return]
@@ -375,7 +400,7 @@ export const diagrams = {
             class Result g
         `,
 
-        'backend-spring-packages': `
+    'backend-spring-packages': `
             graph TB
             Root[com.example.project] --> Common[common config security cache messaging monitoring]
             Root --> Auth[auth]
@@ -404,7 +429,7 @@ export const diagrams = {
             class Common g
         `,
 
-        'backend-fastapi-packages': `
+    'backend-fastapi-packages': `
             graph TB
             App[src/app] --> API[api v1 endpoints]
             App --> Core[core config auth dependencies startup]
@@ -428,8 +453,8 @@ export const diagrams = {
             class Ext g
         `,
 
-        // Frontend Services
-        'frontend-monorepo-architecture': `
+    // Frontend Services
+    'frontend-monorepo-architecture': `
             graph LR
             subgraph Apps [apps]
                 Web[web Vite]
@@ -475,7 +500,7 @@ export const diagrams = {
             class Domain g
         `,
 
-        'frontend-package-map': `
+    'frontend-package-map': `
             graph TB
             Root[packages] --> Apps[apps web web-nextjs mobile desktop]
             Root --> Platform[platform react web-next mobile-rn desktop-electron]
@@ -500,7 +525,7 @@ export const diagrams = {
             class CType,CUtils,CDomain,CInfra,CAssets g
         `,
 
-        'frontend-rtk-single-source': `
+    'frontend-rtk-single-source': `
             graph TB
             UI[Pages and presenter hooks] --> Query[RTK Query hooks]
             Query --> APIs{API services}
@@ -528,7 +553,7 @@ export const diagrams = {
             class Cache,Rollback g
         `,
 
-        'frontend-api-bridge': `
+    'frontend-api-bridge': `
             graph TB
             subgraph SpringPath [Spring API path]
                 ReqSpring[project and task requests] --> BQ[baseQueryWithReauth]
@@ -555,7 +580,7 @@ export const diagrams = {
             class Axios,Spring,Fast g
         `,
 
-        'frontend-di-composition': `
+    'frontend-di-composition': `
             graph TB
             Main[app main.tsx] --> Session[configureFastApiSession]
             Main --> Store[createAppStore platform web]
@@ -576,7 +601,7 @@ export const diagrams = {
             class Usecases g
         `,
 
-        'frontend-troubleshooting-patterns': `
+    'frontend-troubleshooting-patterns': `
             graph TB
             Issue1[project reorder not persisted] --> Cause1[missing transformResponse ordering]
             Cause1 --> Fix1[sort by position in getProjects]
@@ -601,8 +626,8 @@ export const diagrams = {
             class Fix1,Fix2,Fix3,Fix4,Fix5 g
         `,
 
-        // DevOps Services
-        'devops-ci-change-detection': `
+    // DevOps Services
+    'devops-ci-change-detection': `
             graph TB
             PR[Pull request main and dev] --> Filter[dorny paths-filter]
             Filter --> Spring[spring build and push]
@@ -624,7 +649,7 @@ export const diagrams = {
             class Mon g
         `,
 
-        'devops-ci-integration-gate': `
+    'devops-ci-integration-gate': `
             graph TB
             Img[resolve image digests] --> Env[create env and rabbitmq definitions]
             Env --> Up[docker compose dev-CI up]
@@ -643,7 +668,7 @@ export const diagrams = {
             class Scan,Pass,Fail g
         `,
 
-        'devops-cd-wireguard': `
+    'devops-cd-wireguard': `
             graph TB
             Push[push to main or dev] --> Install[install wireguard]
             Install --> WGUp[wg-quick up]
@@ -661,7 +686,7 @@ export const diagrams = {
             class Verify,WGDown g
         `,
 
-        'devops-image-promotion': `
+    'devops-image-promotion': `
             graph LR
             Sha[sha tags from build jobs] --> Dig[buildx imagetools inspect digest]
             Dig --> Retag[imagetools create stable branch tags]
@@ -678,7 +703,7 @@ export const diagrams = {
             class Deploy g
         `,
 
-        'devops-compose-topology': `
+    'devops-compose-topology': `
             graph TB
             subgraph Edge [edge and network utils]
                 CF[Cloudflare]
@@ -738,7 +763,7 @@ export const diagrams = {
             class Prom,Graf,Loki,Alert g
         `,
 
-        'devops-docker-build-map': `
+    'devops-docker-build-map': `
             graph TB
             subgraph SpringImage [spring dockerfile]
                 S1[gradle jdk21 build stage]
@@ -772,7 +797,7 @@ export const diagrams = {
             class N1,N2,N3,N4 g
         `,
 
-        'devops-nginx-runtime-validation': `
+    'devops-nginx-runtime-validation': `
             graph TB
             Start[docker-entrypoint] --> Step1[init environment]
             Step1 --> Step2[setup cors and proxy snippets]
@@ -793,7 +818,7 @@ export const diagrams = {
             class Run,Block g
         `,
 
-        'devops-edge-security': `
+    'devops-edge-security': `
             graph LR
             User[User HTTPS] --> CFE[Cloudflare edge and waf]
             CFE --> Tunnel[cloudflared outbound tunnel]
@@ -817,7 +842,7 @@ export const diagrams = {
             class CI,WG,SSH,Host,WGUDP,Router g
         `,
 
-        'devops-observability-pipeline': `
+    'devops-observability-pipeline': `
             graph TB
             Spring[spring actuator] --> Prom[prometheus]
             Worker[spring-worker 9091] --> Prom
@@ -843,7 +868,7 @@ export const diagrams = {
             class Alert,Slack,Logs,Loki g
         `,
 
-        'devops-k6-load-architecture': `
+    'devops-k6-load-architecture': `
             graph TB
             Profiles[ramping profiles default fast_test stress spike] --> Scenarios[k6 scenarios read write auth ai]
             Scenarios --> Auth[auth manager login refresh backoff]
@@ -865,7 +890,7 @@ export const diagrams = {
             class Metrics,Dash g
         `,
 
-        'devops-stress-mode-lifecycle': `
+    'devops-stress-mode-lifecycle': `
             graph LR
             On[stress-test-on] --> Prep[create env.stress and stop base stack]
             Prep --> Up[up database-test and app and monitoring]
@@ -886,7 +911,7 @@ export const diagrams = {
             class Down,Stop,Restore g
         `,
 
-        'devops-troubleshooting-patterns': `
+    'devops-troubleshooting-patterns': `
             graph TB
             I1[400 bad request on tunnel] --> C1[tunnel service pointed to https 443]
             C1 --> F1[set tunnel service to http 80]

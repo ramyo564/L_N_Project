@@ -4,6 +4,7 @@ import { learnMoreLinks } from './learnmore-links.js';
 const cardMeta = {
     "backend-spring-hex": { title: "Spring Hexagonal", description: "Controller, Application, Domain, and Adapter layers are separated by ports to keep domain logic clean and replaceable.", why: "도메인 규칙을 프레임워크 변경과 분리해 장기 리팩토링 비용을 낮추기 위해 계층 경계를 고정했습니다." },
     "backend-spring-auth": { title: "Spring Auth Flow", description: "Login and refresh issue JWT tokens, refresh session cookies are stored in Redis, and JwtAuthenticationFilter validates bearer tokens per request.", why: "인증 정책/경계를 Spring verify 단일 전략으로 고정해 정책 드리프트를 줄였고, FastAPI 인증 독립성 저하를 감수했습니다." },
+    "backend-spring-oauth2": { title: "Spring OAuth2 Social Login", description: "Google, Kakao, and Naver OAuth2 flows are integrated through a unified DI/DIP structure. Naver whitelist-based verification is handled within the same pipeline.", why: "신규 채널 추가 시 구현 코드를 바꾸지 않고 DI 교체만으로 확장하기 위해 소셜 로그인을 인터페이스 기반으로 분리했습니다." },
     "backend-spring-packages": { title: "Spring Package Map", description: "Domain modules (`auth`, `project`, `task_mvc`, `subtask_mvc`, `user`) share a common platform package for security, cache, messaging, and observability.", why: "기능 증가 시 모듈 단위로 영향 범위를 제한해 1인 개발에서도 변경 리스크를 관리하기 위해 분리했습니다." },
     "backend-spring-domain-rules": { title: "Spring Domain Rules", description: "Project ownership is verified through pending-cache-first access checks, then domain guards enforce delete-state immutability, duplicate reorder prevention, and idempotent delete behavior.", why: "인라인 검증 분산으로 생기는 규칙 누락을 막기 위해 도메인 규칙을 중앙화했고, 초기 설계/구현 속도 저하를 감수했습니다." },
     "backend-spring-state-management": { title: "Spring State Management", description: "Task, Project, and SubTask transitions are controlled in domain models with explicit completion timestamp rules and deleted-entity transition blocking.", why: "상태 전이 규칙을 엔티티 내부에 고정해 비동기 처리 중에도 불변 조건을 유지하기 위해서입니다." },
@@ -51,6 +52,13 @@ const backendDecisionMeta = {
         choice: "Spring verify 단일 정책 경계 채택",
         result: "정책 단일화로 인증 기준 일관성 확보",
         tradeOff: "FastAPI 인증 독립성 저하, verify 경로 의존"
+    },
+    "backend-spring-oauth2": {
+        cardId: "BE-C16",
+        problem: "소셜 로그인 채널 추가 시마다 인증 로직 분기 복잡도 증가",
+        choice: "DI/DIP 기반 채널 추상화 + Naver 화이트리스트 검증 통합",
+        result: "Google/Kakao/Naver 연동 완료, 채널 추가 시 구현체 1개 추가로 확장",
+        tradeOff: "인터페이스 설계 초기 비용 및 채널별 테스트 범위 증가"
     },
     "backend-spring-packages": {
         cardId: "BE-C03",
@@ -176,7 +184,7 @@ export const templateConfig = {
         sectionId: 'system-architecture',
         panelTitle: 'SYSTEM_OVERVIEW',
         panelUid: 'ID: LIFE-NAV-01',
-        diagramId: 'architecture-simple',
+        diagramId: 'architecture',
         metrics: [
             'POSITION: Backend-first System Architect (Life Navigation backend)',
             'PROBLEM: 고부하 요청에서 지연 급증과 정합성 리스크가 누적되었습니다.',
@@ -186,8 +194,8 @@ export const templateConfig = {
         ],
         actions: [
             {
-                label: 'SYSTEM DETAIL ARCHITECTURE 보기',
-                openLabel: 'SYSTEM DETAIL ARCHITECTURE 닫기',
+                label: 'BE-C01~BE-C16 자세히 보기',
+                openLabel: 'BE-C01~BE-C16 닫기',
                 action: 'toggle_panel',
                 target: '#system-architecture-detail'
             }
@@ -202,10 +210,26 @@ export const templateConfig = {
             navLabel: 'ARCH_DETAIL',
             showInNav: false,
             defaultHidden: true,
-            diagramId: 'architecture',
+            linkGrid: [
+                { label: 'BE-C06: 비동기 분리', id: 'backend-spring-api-write' },
+                { label: 'BE-C05: 상태 관리', id: 'backend-spring-state-management' },
+                { label: 'BE-C10: AI 보안 인증', id: 'backend-fastapi-auth' },
+                { label: 'BE-C01: Hexagonal', id: 'backend-spring-hex' },
+                { label: 'BE-C02: 통합 인증', id: 'backend-spring-auth' },
+                { label: 'BE-C16: OAuth2 통합', id: 'backend-spring-oauth2' },
+                { label: 'BE-C03: 모듈 분리', id: 'backend-spring-packages' },
+                { label: 'BE-C04: 도메인 규칙', id: 'backend-spring-domain-rules' },
+                { label: 'BE-C07: 워커 역할 분리', id: 'backend-spring-worker-consume' },
+                { label: 'BE-C08: 병목 재현/검증', id: 'backend-spring-troubleshooting' },
+                { label: 'BE-C09: AI 세션 복구', id: 'backend-fastapi-analyze' },
+                { label: 'BE-C11: AI 구조 설계', id: 'backend-fastapi-packages' },
+                { label: 'BE-C12: LLM 응답 정규화', id: 'backend-fastapi-domain-rules' },
+                { label: 'BE-C13: AI 상태 생명주기', id: 'backend-fastapi-state-management' },
+                { label: 'BE-C14: 매핑 검증 오류 방지', id: 'backend-fastapi-feedback' },
+                { label: 'BE-C15: 외부 API 장애 격리', id: 'backend-fastapi-troubleshooting' }
+            ],
             metrics: [
-                'DETAIL: 인증/비동기 쓰기/AI 추천 경로를 분리한 전체 런타임 구현도입니다.',
-                'GUIDE: SYSTEM_OVERVIEW의 토글 버튼으로 열고 닫을 수 있습니다.'
+                'GUIDE: 원하시는 아키텍처 결정을 클릭하면 카드로 바로 이동합니다.'
             ]
         }
     ],
@@ -243,7 +267,7 @@ export const templateConfig = {
                     desc: 'Collapsed by default: BE-C01 / BE-C02 / BE-C03 / BE-C04 / BE-C07 / BE-C08',
                     collapsible: true,
                     defaultCollapsed: true,
-                    cards: mapCards(["backend-spring-hex", "backend-spring-auth", "backend-spring-packages", "backend-spring-domain-rules", "backend-spring-worker-consume", "backend-spring-troubleshooting"])
+                    cards: mapCards(["backend-spring-hex", "backend-spring-auth", "backend-spring-oauth2", "backend-spring-packages", "backend-spring-domain-rules", "backend-spring-worker-consume", "backend-spring-troubleshooting"])
                 },
                 {
                     title: 'FASTAPI STACK (REMAINING INVENTORY)',
