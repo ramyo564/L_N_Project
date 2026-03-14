@@ -620,53 +620,69 @@ function createTopPanel(panel, index) {
         mermaidContainer.setAttribute('data-mermaid-id', panel.diagramId || '');
         graphContainer.appendChild(mermaidContainer);
         section.appendChild(graphContainer);
-    } else if (panel.linkGrid && Array.isArray(panel.linkGrid)) {
-        const gridContainer = document.createElement('div');
-        gridContainer.style.display = 'grid';
-        gridContainer.style.gridTemplateColumns = 'repeat(auto-fill, minmax(280px, 1fr))';
-        gridContainer.style.gap = '12px';
-        gridContainer.style.margin = '24px 0';
-        gridContainer.style.width = '100%';
+    } else if (panel.linkGroups && Array.isArray(panel.linkGroups)) {
+        const wrapContainer = document.createElement('div');
+        wrapContainer.className = 'service-groups';
+        wrapContainer.style.marginTop = '20px';
 
-        panel.linkGrid.forEach(link => {
-            const btn = document.createElement('a');
-            btn.className = 'hero-action-btn';
-            btn.href = '#' + (link.id || '');
-            btn.textContent = link.label || 'LINK';
-            btn.style.textAlign = 'center';
-            btn.style.width = '100%';
-            btn.style.boxSizing = 'border-box';
+        panel.linkGroups.forEach(group => {
+            const groupSection = document.createElement('div');
+            groupSection.className = 'service-group';
 
-            setTrackData(btn, {
-                area: 'top_panel',
-                component: 'button_link',
-                label: link.label,
-                action: 'scroll_to_card',
-                destination: '#' + (link.id || ''),
-                sectionId: panel.sectionId || ''
-            });
+            if (group.title || group.desc) {
+                const divider = createGroupDivider(group, 'blue');
+                groupSection.appendChild(divider);
+            }
 
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetEl = document.getElementById(link.id);
-                if (targetEl) {
-                    const groupSummary = targetEl.closest('.group-toggle');
-                    if (groupSummary && groupSummary.tagName.toLowerCase() === 'details') {
-                        groupSummary.open = true;
-                    }
+            const gridContainer = document.createElement('div');
+            gridContainer.style.display = 'grid';
+            gridContainer.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
+            gridContainer.style.gap = '10px';
+            gridContainer.style.width = '100%';
 
-                    let parentDetails = targetEl.closest('.section-toggle');
-                    if (parentDetails && parentDetails.tagName.toLowerCase() === 'details') {
-                        parentDetails.open = true;
-                    }
+            if (Array.isArray(group.links)) {
+                group.links.forEach(link => {
+                    const btn = document.createElement('a');
+                    btn.className = 'arch-link-btn';
+                    btn.href = '#' + (link.id || '');
+                    btn.textContent = link.label || 'LINK';
+                    btn.style.width = '100%';
+                    btn.style.boxSizing = 'border-box';
 
-                    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    history.pushState(null, '', '#' + link.id);
-                }
-            });
-            gridContainer.appendChild(btn);
+                    setTrackData(btn, {
+                        area: 'top_panel',
+                        component: 'button_link',
+                        label: link.label,
+                        action: 'scroll_to_card',
+                        destination: '#' + (link.id || ''),
+                        sectionId: panel.sectionId || ''
+                    });
+
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const targetEl = document.getElementById(link.id);
+                        if (targetEl) {
+                            const groupSummary = targetEl.closest('.group-toggle');
+                            if (groupSummary && groupSummary.tagName.toLowerCase() === 'details') {
+                                groupSummary.open = true;
+                            }
+
+                            let parentDetails = targetEl.closest('.section-toggle');
+                            if (parentDetails && parentDetails.tagName.toLowerCase() === 'details') {
+                                parentDetails.open = true;
+                            }
+
+                            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            history.pushState(null, '', '#' + link.id);
+                        }
+                    });
+                    gridContainer.appendChild(btn);
+                });
+            }
+            groupSection.appendChild(gridContainer);
+            wrapContainer.appendChild(groupSection);
         });
-        section.appendChild(gridContainer);
+        section.appendChild(wrapContainer);
     }
 
     const metrics = document.createElement('div');

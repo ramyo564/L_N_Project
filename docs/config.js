@@ -2,22 +2,22 @@ import { diagrams } from './diagrams.js';
 import { learnMoreLinks } from './learnmore-links.js';
 
 const cardMeta = {
-    "backend-spring-hex": { title: "Spring Hexagonal", description: "Controller, Application, Domain, and Adapter layers are separated by ports to keep domain logic clean and replaceable.", why: "도메인 규칙을 프레임워크 변경과 분리해 장기 리팩토링 비용을 낮추기 위해 계층 경계를 고정했습니다." },
-    "backend-spring-auth": { title: "Spring Auth Flow", description: "Login and refresh issue JWT tokens, refresh session cookies are stored in Redis, and JwtAuthenticationFilter validates bearer tokens per request.", why: "인증 정책/경계를 Spring verify 단일 전략으로 고정해 정책 드리프트를 줄였고, FastAPI 인증 독립성 저하를 감수했습니다." },
-    "backend-spring-oauth2": { title: "Spring OAuth2 Social Login", description: "Google, Kakao, and Naver OAuth2 flows are integrated through a unified DI/DIP structure. Naver whitelist-based verification is handled within the same pipeline.", why: "신규 채널 추가 시 구현 코드를 바꾸지 않고 DI 교체만으로 확장하기 위해 소셜 로그인을 인터페이스 기반으로 분리했습니다." },
-    "backend-spring-packages": { title: "Spring Package Map", description: "Domain modules (`auth`, `project`, `task_mvc`, `subtask_mvc`, `user`) share a common platform package for security, cache, messaging, and observability.", why: "기능 증가 시 모듈 단위로 영향 범위를 제한해 1인 개발에서도 변경 리스크를 관리하기 위해 분리했습니다." },
-    "backend-spring-domain-rules": { title: "Spring Domain Rules", description: "Project ownership is verified through pending-cache-first access checks, then domain guards enforce delete-state immutability, duplicate reorder prevention, and idempotent delete behavior.", why: "인라인 검증 분산으로 생기는 규칙 누락을 막기 위해 도메인 규칙을 중앙화했고, 초기 설계/구현 속도 저하를 감수했습니다." },
-    "backend-spring-state-management": { title: "Spring State Management", description: "Task, Project, and SubTask transitions are controlled in domain models with explicit completion timestamp rules and deleted-entity transition blocking.", why: "상태 전이 규칙을 엔티티 내부에 고정해 비동기 처리 중에도 불변 조건을 유지하기 위해서입니다." },
-    "backend-spring-api-write": { title: "Spring API Write Path", description: "TaskController returns 202 quickly, writes optimistic Redis cache, and publishes task events to RabbitMQ.", why: "동기 DB 저장으로 응답 지연이 커지는 문제를 줄이기 위해 202 즉시응답+Pending+MQ 비동기 경로를 택했고, 정합성 리스크는 DLQ·재처리 운영 복잡도를 감수해 관리합니다." },
-    "backend-spring-worker-consume": { title: "Spring Worker Consume Path", description: "TaskEventListener batch-consumes queue messages, executes command handlers, persists to PostgreSQL, and triggers cache eviction events.", why: "API 서버와 Worker 역할을 분리해 부하 급증 시에도 사용자 응답성을 보호했습니다." },
-    "backend-spring-troubleshooting": { title: "Spring Troubleshooting", description: "Resolved major bottlenecks including MVC+WebFlux context overhead, Redis connection contention, race conditions after async writes, and RabbitMQ channel conflicts through staged architecture tuning.", why: "실운영 전에 k6로 병목을 재현해 단계적으로 제거하는 방식을 택했고, 테스트 구축·분석 시간과 저트래픽 구간 과투자 위험을 감수했습니다." },
-    "backend-fastapi-analyze": { title: "FastAPI Analyze Path", description: "Failure analysis verifies JWT via Spring, stores AI session state in Redis, queries Qdrant context, and generates recommendations with LLM.", why: "AI 분석 품질과 복구 가능성을 높이기 위해 Spring 검증·Redis 세션·Qdrant 컨텍스트를 선행한 Analyze 경로를 택했고, 서비스 경계 증가와 외부 의존성을 감수했습니다." },
-    "backend-fastapi-auth": { title: "FastAPI Auth Flow", description: "All protected AI endpoints validate bearer tokens by calling Spring verify API through shared httpx client and map verified user context for services.", why: "FastAPI 요청 단위에서 Spring verify를 호출해 인증 정책을 실행으로 강제했고, 추가 네트워크 hop을 감수했습니다." },
-    "backend-fastapi-packages": { title: "FastAPI Package Map", description: "API router, dependency graph, services, domain interfaces, and infrastructure clients are split for testability and runtime flexibility.", why: "Flat 구조의 초기 속도 대신 계층 분리로 테스트성·교체 용이성을 택했고, 초기 설계 비용과 디버깅·장애 추적 경로 증가를 감수했습니다." },
-    "backend-fastapi-domain-rules": { title: "FastAPI Domain Rules", description: "Recommendations are normalized with JSON parsing and fallback rules, while feedback submission enforces session validity, index bounds, and recommendation mapping integrity.", why: "LLM 출력 오염이 후속 생성으로 전파되는 위험을 막기 위해 JSON 정규화·fallback·매핑 검증 규칙을 넣었고, 구현 복잡도와 일부 지연 증가를 감수했습니다." },
-    "backend-fastapi-state-management": { title: "FastAPI State Management", description: "AI session lifecycle is persisted in Redis from analyzing to completed state, with category/recommendation snapshots and feedback metadata updates after task creation.", why: "분석→피드백→생성 단계의 상태 불일치를 막기 위해 Redis 세션 수명주기를 고정했고, 세션 만료/정리 운영 비용을 감수했습니다." },
-    "backend-fastapi-feedback": { title: "FastAPI Feedback Path", description: "Selected recommendation indexes are resolved from Redis session snapshot and sent to Spring task API through SpringClient.create_tasks.", why: "잘못된 추천 인덱스로 task가 생성되는 오류를 막기 위해 세션 스냅샷 매핑 후 Spring 생성 API로 위임했고, 경로 복잡도와 추가 네트워크 hop을 감수했습니다." },
-    "backend-fastapi-troubleshooting": { title: "FastAPI Troubleshooting", description: "Hardened AI flow by handling token/verify failures, recommendation parsing fallbacks, invalid feedback selections, mapping mismatches, and cache/vector errors with resilient degradation paths.", why: "외부 의존 장애가 전체 기능으로 번지는 것을 막기 위해 verify/fallback/유효성 분기 기반 안전 저하 전략을 적용했고, 코드 분기 증가와 디버깅 난이도 상승을 감수했습니다." },
+    "backend-spring-hex": { title: "BE-C01: Hexagonal Architecture", description: "Controller, Application, Domain, and Adapter layers are separated by ports to keep domain logic clean and replaceable.", why: "도메인 규칙을 프레임워크 변경과 분리해 장기 리팩토링 비용을 낮추기 위해 계층 경계를 고정했습니다." },
+    "backend-spring-auth": { title: "BE-C02: 통합 인증 (Spring Auth)", description: "Login and refresh issue JWT tokens, refresh session cookies are stored in Redis, and JwtAuthenticationFilter validates bearer tokens per request.", why: "인증 정책/경계를 Spring verify 단일 전략으로 고정해 정책 드리프트를 줄였고, FastAPI 인증 독립성 저하를 감수했습니다." },
+    "backend-spring-oauth2": { title: "BE-C16: OAuth2 소셜 로그인 통합", description: "Google, Kakao, and Naver OAuth2 flows are integrated through a unified DI/DIP structure. Naver whitelist-based verification is handled within the same pipeline.", why: "신규 채널 추가 시 구현 코드를 바꾸지 않고 DI 교체만으로 확장하기 위해 소셜 로그인을 인터페이스 기반으로 분리했습니다." },
+    "backend-spring-packages": { title: "BE-C03: 패키지/모듈 분리", description: "Domain modules (`auth`, `project`, `task_mvc`, `subtask_mvc`, `user`) share a common platform package for security, cache, messaging, and observability.", why: "기능 증가 시 모듈 단위로 영향 범위를 제한해 1인 개발에서도 변경 리스크를 관리하기 위해 분리했습니다." },
+    "backend-spring-domain-rules": { title: "BE-C04: 도메인 규칙 (Domain Rules)", description: "Project ownership is verified through pending-cache-first access checks, then domain guards enforce delete-state immutability, duplicate reorder prevention, and idempotent delete behavior.", why: "인라인 검증 분산으로 생기는 규칙 누락을 막기 위해 도메인 규칙을 중앙화했고, 초기 설계/구현 속도 저하를 감수했습니다." },
+    "backend-spring-state-management": { title: "BE-C05: 상태 관리 (State Management)", description: "Task, Project, and SubTask transitions are controlled in domain models with explicit completion timestamp rules and deleted-entity transition blocking.", why: "상태 전이 규칙을 엔티티 내부에 고정해 비동기 처리 중에도 불변 조건을 유지하기 위해서입니다." },
+    "backend-spring-api-write": { title: "BE-C06: 비동기 쓰기 (API Write Path)", description: "TaskController returns 202 quickly, writes optimistic Redis cache, and publishes task events to RabbitMQ.", why: "동기 DB 저장으로 응답 지연이 커지는 문제를 줄이기 위해 202 즉시응답+Pending+MQ 비동기 경로를 택했고, 정합성 리스크는 DLQ·재처리 운영 복잡도를 감수해 관리합니다." },
+    "backend-spring-worker-consume": { title: "BE-C07: 워커 역할 분리 (Consume Path)", description: "TaskEventListener batch-consumes queue messages, executes command handlers, persists to PostgreSQL, and triggers cache eviction events.", why: "API 서버와 Worker 역할을 분리해 부하 급증 시에도 사용자 응답성을 보호했습니다." },
+    "backend-spring-troubleshooting": { title: "BE-C08: 병목 재현 및 검증", description: "Resolved major bottlenecks including MVC+WebFlux context overhead, Redis connection contention, race conditions after async writes, and RabbitMQ channel conflicts through staged architecture tuning.", why: "실운영 전에 k6로 병목을 재현해 단계적으로 제거하는 방식을 택했고, 테스트 구축·분석 시간과 저트래픽 구간 과투자 위험을 감수했습니다." },
+    "backend-fastapi-analyze": { title: "BE-C09: AI 세션 복구 (Analyze Path)", description: "Failure analysis verifies JWT via Spring, stores AI session state in Redis, queries Qdrant context, and generates recommendations with LLM.", why: "AI 분석 품질과 복구 가능성을 높이기 위해 Spring 검증·Redis 세션·Qdrant 컨텍스트를 선행한 Analyze 경로를 택했고, 서비스 경계 증가와 외부 의존성을 감수했습니다." },
+    "backend-fastapi-auth": { title: "BE-C10: AI 보안 인증 (Auth Flow)", description: "All protected AI endpoints validate bearer tokens by calling Spring verify API through shared httpx client and map verified user context for services.", why: "FastAPI 요청 단위에서 Spring verify를 호출해 인증 정책을 실행으로 강제했고, 추가 네트워크 hop을 감수했습니다." },
+    "backend-fastapi-packages": { title: "BE-C11: AI 구조 설계 (Package Map)", description: "API router, dependency graph, services, domain interfaces, and infrastructure clients are split for testability and runtime flexibility.", why: "Flat 구조의 초기 속도 대신 계층 분리로 테스트성·교체 용이성을 택했고, 초기 설계 비용과 디버깅·장애 추적 경로 증가를 감수했습니다." },
+    "backend-fastapi-domain-rules": { title: "BE-C12: LLM 응답 정규화 (Domain Rules)", description: "Recommendations are normalized with JSON parsing and fallback rules, while feedback submission enforces session validity, index bounds, and recommendation mapping integrity.", why: "LLM 출력 오염이 후속 생성으로 전파되는 위험을 막기 위해 JSON 정규화·fallback·매핑 검증 규칙을 넣었고, 구현 복잡도와 일부 지연 증가를 감수했습니다." },
+    "backend-fastapi-state-management": { title: "BE-C13: AI 상태 생명주기 (State Management)", description: "AI session lifecycle is persisted in Redis from analyzing to completed state, with category/recommendation snapshots and feedback metadata updates after task creation.", why: "분석→피드백→생성 단계의 상태 불일치를 막기 위해 Redis 세션 수명주기를 고정했고, 세션 만료/정리 운영 비용을 감수했습니다." },
+    "backend-fastapi-feedback": { title: "BE-C14: 매핑 검증 오류 방지 (Feedback Path)", description: "Selected recommendation indexes are resolved from Redis session snapshot and sent to Spring task API through SpringClient.create_tasks.", why: "잘못된 추천 인덱스로 task가 생성되는 오류를 막기 위해 세션 스냅샷 매핑 후 Spring 생성 API로 위임했고, 경로 복잡도와 추가 네트워크 hop을 감수했습니다." },
+    "backend-fastapi-troubleshooting": { title: "BE-C15: 외부 API 장애 격리 (Troubleshooting)", description: "Hardened AI flow by handling token/verify failures, recommendation parsing fallbacks, invalid feedback selections, mapping mismatches, and cache/vector errors with resilient degradation paths.", why: "외부 의존 장애가 전체 기능으로 번지는 것을 막기 위해 verify/fallback/유효성 분기 기반 안전 저하 전략을 적용했고, 코드 분기 증가와 디버깅 난이도 상승을 감수했습니다." },
     "frontend-monorepo-architecture": { title: "Frontend Monorepo Architecture", description: "Apps, platform adapters, and core packages are split by dependency direction to keep business logic platform-independent and reusable across Web/RN/Electron.", why: "Web/RN/Electron 간 중복 구현을 줄이고 플랫폼 교체 시 비즈니스 로직 재사용률을 높이기 위해 모노레포 경계를 고정했습니다." },
     "frontend-api-bridge": { title: "Frontend Auth & API Bridge", description: "Spring requests use `fetchBaseQuery` with reauth, while FastAPI AI requests use token-manager-backed codegen clients via `fakeBaseQuery` queryFn integration.", why: "Spring/FastAPI 인증 실패 패턴이 달라 경로를 분리해 토큰 재발급·오류 처리 책임을 명확히 하기 위해서입니다." },
     "frontend-package-map": { title: "Frontend Package Map", description: "Core modules (`api`, `store`, `domain`, `hooks`, `services`, `usecases`, `types`, `utils`) are organized to enforce predictable layering and import boundaries.", why: "레이어별 import 경계를 강제해 순환 의존과 기능 확장 시 결합도 상승을 사전에 막기 위해서입니다." },
@@ -159,7 +159,7 @@ const mapCards = (ids) => ids.map((id) => {
     return {
         mermaidId: id,
         title: baseMeta.title ?? id,
-        subtitle: decisionMeta?.cardId ?? '',
+        subtitle: '',
         description: decisionMeta ? `Problem: ${decisionMeta.problem}` : (baseMeta.description ?? ''),
         highlights: decisionMeta ? [
             `Choice: ${decisionMeta.choice}`,
@@ -210,23 +210,41 @@ export const templateConfig = {
             navLabel: 'ARCH_DETAIL',
             showInNav: false,
             defaultHidden: true,
-            linkGrid: [
-                { label: 'BE-C06: 비동기 분리', id: 'backend-spring-api-write' },
-                { label: 'BE-C05: 상태 관리', id: 'backend-spring-state-management' },
-                { label: 'BE-C10: AI 보안 인증', id: 'backend-fastapi-auth' },
-                { label: 'BE-C01: Hexagonal', id: 'backend-spring-hex' },
-                { label: 'BE-C02: 통합 인증', id: 'backend-spring-auth' },
-                { label: 'BE-C16: OAuth2 통합', id: 'backend-spring-oauth2' },
-                { label: 'BE-C03: 모듈 분리', id: 'backend-spring-packages' },
-                { label: 'BE-C04: 도메인 규칙', id: 'backend-spring-domain-rules' },
-                { label: 'BE-C07: 워커 역할 분리', id: 'backend-spring-worker-consume' },
-                { label: 'BE-C08: 병목 재현/검증', id: 'backend-spring-troubleshooting' },
-                { label: 'BE-C09: AI 세션 복구', id: 'backend-fastapi-analyze' },
-                { label: 'BE-C11: AI 구조 설계', id: 'backend-fastapi-packages' },
-                { label: 'BE-C12: LLM 응답 정규화', id: 'backend-fastapi-domain-rules' },
-                { label: 'BE-C13: AI 상태 생명주기', id: 'backend-fastapi-state-management' },
-                { label: 'BE-C14: 매핑 검증 오류 방지', id: 'backend-fastapi-feedback' },
-                { label: 'BE-C15: 외부 API 장애 격리', id: 'backend-fastapi-troubleshooting' }
+            linkGroups: [
+                {
+                    title: "SPRING CORE & INFRA",
+                    desc: "백엔드 통합/분리 및 트래픽 분산 설계",
+                    links: [
+                        { label: 'BE-C01: Hexagonal', id: 'backend-spring-hex' },
+                        { label: 'BE-C02: 통합 인증', id: 'backend-spring-auth' },
+                        { label: 'BE-C16: OAuth2 통합', id: 'backend-spring-oauth2' },
+                        { label: 'BE-C03: 모듈 분리', id: 'backend-spring-packages' },
+                        { label: 'BE-C06: 비동기 쓰기', id: 'backend-spring-api-write' },
+                        { label: 'BE-C07: 워커 분리', id: 'backend-spring-worker-consume' }
+                    ]
+                },
+                {
+                    title: "DOMAIN RULES & DATA",
+                    desc: "정합성 및 상태 생명주기 제어",
+                    links: [
+                        { label: 'BE-C04: 도메인 규칙', id: 'backend-spring-domain-rules' },
+                        { label: 'BE-C05: 상태 관리', id: 'backend-spring-state-management' },
+                        { label: 'BE-C08: 병목 재현/검증', id: 'backend-spring-troubleshooting' }
+                    ]
+                },
+                {
+                    title: "FASTAPI & AI INTEGRATION",
+                    desc: "인증 보안, AI 파이프라인 및 장애 한계선 제어",
+                    links: [
+                        { label: 'BE-C10: AI 보안 인증', id: 'backend-fastapi-auth' },
+                        { label: 'BE-C11: AI 구조 설계', id: 'backend-fastapi-packages' },
+                        { label: 'BE-C15: 외부 API 장애 격리', id: 'backend-fastapi-troubleshooting' },
+                        { label: 'BE-C12: LLM 응답 정규화', id: 'backend-fastapi-domain-rules' },
+                        { label: 'BE-C13: AI 상태 생명주기', id: 'backend-fastapi-state-management' },
+                        { label: 'BE-C14: 매핑 검증 오류 방지', id: 'backend-fastapi-feedback' },
+                        { label: 'BE-C09: AI 세션 복구', id: 'backend-fastapi-analyze' }
+                    ]
+                }
             ],
             metrics: [
                 'GUIDE: 원하시는 아키텍처 결정을 클릭하면 카드로 바로 이동합니다.'

@@ -350,6 +350,44 @@ body.modal-open {
     color: #ffffff;
 }
 
+.arch-link-btn {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    font-family: var(--font-code);
+    font-size: 0.76rem;
+    letter-spacing: 0.02em;
+    border: 1px solid rgba(88, 166, 255, 0.15);
+    border-radius: 6px;
+    padding: 0.65rem 0.9rem;
+    color: var(--text-primary);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.arch-link-btn::before {
+    content: "↳";
+    color: var(--text-secondary);
+    margin-right: 0.6rem;
+    font-size: 0.85rem;
+    opacity: 0.6;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.arch-link-btn:hover {
+    background: rgba(88, 166, 255, 0.08);
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+.arch-link-btn:hover::before {
+    color: var(--accent-blue);
+    opacity: 1;
+    transform: translateX(2px);
+}
+
 .skill-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
