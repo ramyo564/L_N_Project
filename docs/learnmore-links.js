@@ -2,6 +2,7 @@ export const learnMoreLinks = {
         // Backend
         'backend-spring-hex': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#lm-backend-spring-hex',
         'backend-spring-auth': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#lm-backend-spring-auth',
+        'backend-spring-oauth2': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#lm-backend-spring-oauth2',
         'backend-spring-packages': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/README.md#lm-backend-spring-packages',
         'backend-spring-domain-rules': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/BusinessRules.md#lm-backend-spring-domain-rules',
         'backend-spring-state-management': 'https://github.com/ramyo564/L_N_Project/blob/main/Backend/BusinessRules.md#lm-backend-spring-state-management',
