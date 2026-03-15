@@ -1016,6 +1016,148 @@ function createServiceCard(card, sectionConfig) {
     return article;
 }
 
+function ensureCaseCardVisible(targetId) {
+    const id = targetId.replace(/^#/, '');
+    // 이 프로젝트에서는 별도의 showcase 컨트롤러가 없으므로 
+    // 단순히 해당 ID를 가진 카드가 있는지만 확인하거나, 
+    // 필요 시 아코디언을 강제로 열어주는 로직을 넣을 수 있습니다.
+    return true;
+}
+
+function revealHashTarget(hash) {
+    const id = hash.replace(/^#/, '');
+    if (!id) return;
+    ensureCaseCardVisible(id);
+    setTimeout(() => {
+        const target = byId(id);
+        if (!target) return;
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        target.classList.remove('is-target-highlight');
+        void target.offsetWidth;
+        target.classList.add('is-target-highlight');
+    }, 100);
+}
+
+function createSectionRecruiterBrief(sectionConfig) {
+    const brief = sectionConfig?.recruiterBrief;
+    if (!brief) return null;
+    const quickCases = (brief.cases || []).map(item => ({
+        id: String(item?.id || '').trim(),
+        anchorId: String(item?.anchorId || '').trim(),
+        title: String(item?.title || '').trim(),
+        problem: String(item?.problem || '').trim(),
+        action: String(item?.action || '').trim(),
+        impact: String(item?.impact || '').trim(),
+        links: item?.links || []
+    })).filter(i => i.id || i.title);
+
+    const wrapper = document.createElement('section');
+    wrapper.className = 'section-recruiter-brief';
+    if (brief.kicker) {
+        const kicker = document.createElement('p');
+        kicker.className = 'section-recruiter-kicker';
+        kicker.textContent = brief.kicker;
+        wrapper.appendChild(kicker);
+    }
+    if (brief.title) {
+        const title = document.createElement('h3');
+        title.className = 'section-recruiter-title';
+        title.textContent = brief.title;
+        wrapper.appendChild(title);
+    }
+
+    if (quickCases.length > 0) {
+        const grid = document.createElement('div');
+        grid.className = 'section-recruiter-card-grid';
+        quickCases.forEach(item => {
+            const card = document.createElement('article');
+            card.className = 'section-recruiter-card';
+            const header = document.createElement('div');
+            header.className = 'section-recruiter-card-header';
+            const idLine = document.createElement('p');
+            idLine.className = 'section-recruiter-card-id';
+            idLine.textContent = item.id;
+            const cardTitle = document.createElement('h4');
+            cardTitle.className = 'section-recruiter-card-title';
+            cardTitle.textContent = item.title;
+            header.append(idLine, cardTitle);
+            const toggleHint = document.createElement('div');
+            toggleHint.className = 'section-recruiter-card-toggle-hint';
+            toggleHint.textContent = 'DETAILS';
+            header.appendChild(toggleHint);
+            const details = document.createElement('div');
+            details.className = 'section-recruiter-card-details';
+
+            const createRow = (labelText, valueText) => {
+                if (!valueText) return null;
+                const row = document.createElement('div');
+                row.className = 'section-recruiter-card-row';
+                const key = document.createElement('span');
+                key.className = 'section-recruiter-card-key';
+                key.textContent = labelText;
+                const val = document.createElement('span');
+                val.className = 'section-recruiter-card-value';
+                val.textContent = valueText;
+                row.append(key, val);
+                return row;
+            };
+
+            const problemRow = createRow('PROBLEM', item.problem);
+            const actionRow = createRow('ACTION', item.action);
+            const impactRow = createRow('IMPACT', item.impact);
+
+            if (problemRow) details.appendChild(problemRow);
+            if (actionRow) details.appendChild(actionRow);
+            if (impactRow) details.appendChild(impactRow);
+
+            // [추가] links 지원 (Hoops 스타일 확장)
+            if (Array.isArray(item.links)) {
+                item.links.forEach(l => {
+                    const btn = document.createElement('a');
+                    btn.className = 'card-extra-btn';
+                    btn.style.display = 'block';
+                    btn.style.width = '100%';
+                    btn.style.marginTop = '0.8rem';
+                    btn.style.textAlign = 'center';
+                    btn.href = l.href;
+                    btn.textContent = l.label;
+                    if (!String(l.href).startsWith('#')) {
+                        btn.target = '_blank';
+                        btn.rel = 'noopener noreferrer';
+                    }
+                    btn.onclick = (e) => {
+                        if (String(l.href).startsWith('#')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const hash = String(l.href);
+                            revealHashTarget(hash);
+                        }
+                    };
+                    details.appendChild(btn);
+                });
+            }
+
+            if (item.anchorId && item.anchorId !== '#') {
+                const btn = document.createElement('button');
+                btn.className = 'card-extra-btn';
+                btn.style.width = '100%';
+                btn.style.marginTop = '0.8rem';
+                btn.textContent = '상세 아키텍처 보기';
+                btn.onclick = (e) => { 
+                    e.stopPropagation(); 
+                    revealHashTarget(item.anchorId); 
+                };
+                details.appendChild(btn);
+            }
+            card.append(header, details);
+            card.onclick = () => card.classList.toggle('is-expanded');
+            grid.appendChild(card);
+        });
+        wrapper.appendChild(grid);
+    }
+    return wrapper;
+}
+
 function renderServiceSections() {
     const container = byId('service-sections');
     if (!container) {
@@ -1042,6 +1184,8 @@ function renderServiceSections() {
             summary.textContent = sectionConfig.summary;
             header.appendChild(summary);
         }
+
+        const recruiterBrief = createSectionRecruiterBrief(sectionConfig);
 
         const groupsContainer = document.createElement('div');
         groupsContainer.className = 'service-groups';
@@ -1084,9 +1228,13 @@ function renderServiceSections() {
             sectionToggle.setAttribute('data-theme', sectionConfig.theme || 'blue');
             sectionToggle.open = sectionConfig.defaultCollapsed !== true;
             sectionToggle.append(createSectionToggleSummary(sectionConfig), groupsContainer);
-            sectionWrapper.append(header, sectionToggle);
+            sectionWrapper.append(header);
+            if (recruiterBrief) sectionWrapper.appendChild(recruiterBrief);
+            sectionWrapper.appendChild(sectionToggle);
         } else {
-            sectionWrapper.append(header, groupsContainer);
+            sectionWrapper.append(header);
+            if (recruiterBrief) sectionWrapper.appendChild(recruiterBrief);
+            sectionWrapper.appendChild(groupsContainer);
         }
         container.appendChild(sectionWrapper);
     });

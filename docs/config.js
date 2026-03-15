@@ -2,252 +2,79 @@ import { diagrams } from './diagrams.js';
 import { learnMoreLinks } from './learnmore-links.js';
 
 const cardMeta = {
-    "backend-spring-hex": { title: "BE-C01: Hexagonal Architecture", description: "Controller, Application, Domain, and Adapter layers are separated by ports to keep domain logic clean and replaceable.", why: "도메인 규칙을 프레임워크 변경과 분리해 장기 리팩토링 비용을 낮추기 위해 계층 경계를 고정했습니다." },
-    "backend-spring-auth": { title: "BE-C02: 통합 인증 (Spring Auth)", description: "Login and refresh issue JWT tokens, refresh session cookies are stored in Redis, and JwtAuthenticationFilter validates bearer tokens per request.", why: "인증 정책/경계를 Spring verify 단일 전략으로 고정해 정책 드리프트를 줄였고, FastAPI 인증 독립성 저하를 감수했습니다." },
-    "backend-spring-oauth2": { title: "BE-C16: OAuth2 소셜 로그인 통합", description: "Google, Kakao, and Naver OAuth2 flows are integrated through a unified DI/DIP structure. Naver whitelist-based verification is handled within the same pipeline.", why: "신규 채널 추가 시 구현 코드를 바꾸지 않고 DI 교체만으로 확장하기 위해 소셜 로그인을 인터페이스 기반으로 분리했습니다." },
-    "backend-spring-packages": { title: "BE-C03: 패키지/모듈 분리", description: "Domain modules (`auth`, `project`, `task_mvc`, `subtask_mvc`, `user`) share a common platform package for security, cache, messaging, and observability.", why: "기능 증가 시 모듈 단위로 영향 범위를 제한해 1인 개발에서도 변경 리스크를 관리하기 위해 분리했습니다." },
-    "backend-spring-domain-rules": { title: "BE-C04: 도메인 규칙 (Domain Rules)", description: "Project ownership is verified through pending-cache-first access checks, then domain guards enforce delete-state immutability, duplicate reorder prevention, and idempotent delete behavior.", why: "인라인 검증 분산으로 생기는 규칙 누락을 막기 위해 도메인 규칙을 중앙화했고, 초기 설계/구현 속도 저하를 감수했습니다." },
-    "backend-spring-state-management": { title: "BE-C05: 상태 관리 (State Management)", description: "Task, Project, and SubTask transitions are controlled in domain models with explicit completion timestamp rules and deleted-entity transition blocking.", why: "상태 전이 규칙을 엔티티 내부에 고정해 비동기 처리 중에도 불변 조건을 유지하기 위해서입니다." },
-    "backend-spring-api-write": { title: "BE-C06: 비동기 쓰기 (API Write Path)", description: "TaskController returns 202 quickly, writes optimistic Redis cache, and publishes task events to RabbitMQ.", why: "동기 DB 저장으로 응답 지연이 커지는 문제를 줄이기 위해 202 즉시응답+Pending+MQ 비동기 경로를 택했고, 정합성 리스크는 DLQ·재처리 운영 복잡도를 감수해 관리합니다." },
-    "backend-spring-worker-consume": { title: "BE-C07: 워커 역할 분리 (Consume Path)", description: "TaskEventListener batch-consumes queue messages, executes command handlers, persists to PostgreSQL, and triggers cache eviction events.", why: "API 서버와 Worker 역할을 분리해 부하 급증 시에도 사용자 응답성을 보호했습니다." },
-    "backend-spring-troubleshooting": { title: "BE-C08: 병목 재현 및 검증", description: "Resolved major bottlenecks including MVC+WebFlux context overhead, Redis connection contention, race conditions after async writes, and RabbitMQ channel conflicts through staged architecture tuning.", why: "실운영 전에 k6로 병목을 재현해 단계적으로 제거하는 방식을 택했고, 테스트 구축·분석 시간과 저트래픽 구간 과투자 위험을 감수했습니다." },
-    "backend-fastapi-analyze": { title: "BE-C09: AI 세션 복구 (Analyze Path)", description: "Failure analysis verifies JWT via Spring, stores AI session state in Redis, queries Qdrant context, and generates recommendations with LLM.", why: "AI 분석 품질과 복구 가능성을 높이기 위해 Spring 검증·Redis 세션·Qdrant 컨텍스트를 선행한 Analyze 경로를 택했고, 서비스 경계 증가와 외부 의존성을 감수했습니다." },
-    "backend-fastapi-auth": { title: "BE-C10: AI 보안 인증 (Auth Flow)", description: "All protected AI endpoints validate bearer tokens by calling Spring verify API through shared httpx client and map verified user context for services.", why: "FastAPI 요청 단위에서 Spring verify를 호출해 인증 정책을 실행으로 강제했고, 추가 네트워크 hop을 감수했습니다." },
-    "backend-fastapi-packages": { title: "BE-C11: AI 구조 설계 (Package Map)", description: "API router, dependency graph, services, domain interfaces, and infrastructure clients are split for testability and runtime flexibility.", why: "Flat 구조의 초기 속도 대신 계층 분리로 테스트성·교체 용이성을 택했고, 초기 설계 비용과 디버깅·장애 추적 경로 증가를 감수했습니다." },
-    "backend-fastapi-domain-rules": { title: "BE-C12: LLM 응답 정규화 (Domain Rules)", description: "Recommendations are normalized with JSON parsing and fallback rules, while feedback submission enforces session validity, index bounds, and recommendation mapping integrity.", why: "LLM 출력 오염이 후속 생성으로 전파되는 위험을 막기 위해 JSON 정규화·fallback·매핑 검증 규칙을 넣었고, 구현 복잡도와 일부 지연 증가를 감수했습니다." },
-    "backend-fastapi-state-management": { title: "BE-C13: AI 상태 생명주기 (State Management)", description: "AI session lifecycle is persisted in Redis from analyzing to completed state, with category/recommendation snapshots and feedback metadata updates after task creation.", why: "분석→피드백→생성 단계의 상태 불일치를 막기 위해 Redis 세션 수명주기를 고정했고, 세션 만료/정리 운영 비용을 감수했습니다." },
-    "backend-fastapi-feedback": { title: "BE-C14: 매핑 검증 오류 방지 (Feedback Path)", description: "Selected recommendation indexes are resolved from Redis session snapshot and sent to Spring task API through SpringClient.create_tasks.", why: "잘못된 추천 인덱스로 task가 생성되는 오류를 막기 위해 세션 스냅샷 매핑 후 Spring 생성 API로 위임했고, 경로 복잡도와 추가 네트워크 hop을 감수했습니다." },
-    "backend-fastapi-troubleshooting": { title: "BE-C15: 외부 API 장애 격리 (Troubleshooting)", description: "Hardened AI flow by handling token/verify failures, recommendation parsing fallbacks, invalid feedback selections, mapping mismatches, and cache/vector errors with resilient degradation paths.", why: "외부 의존 장애가 전체 기능으로 번지는 것을 막기 위해 verify/fallback/유효성 분기 기반 안전 저하 전략을 적용했고, 코드 분기 증가와 디버깅 난이도 상승을 감수했습니다." },
-    "frontend-monorepo-architecture": { title: "Frontend Monorepo Architecture", description: "Apps, platform adapters, and core packages are split by dependency direction to keep business logic platform-independent and reusable across Web/RN/Electron.", why: "Web/RN/Electron 간 중복 구현을 줄이고 플랫폼 교체 시 비즈니스 로직 재사용률을 높이기 위해 모노레포 경계를 고정했습니다." },
-    "frontend-api-bridge": { title: "Frontend Auth & API Bridge", description: "Spring requests use `fetchBaseQuery` with reauth, while FastAPI AI requests use token-manager-backed codegen clients via `fakeBaseQuery` queryFn integration.", why: "Spring/FastAPI 인증 실패 패턴이 달라 경로를 분리해 토큰 재발급·오류 처리 책임을 명확히 하기 위해서입니다." },
-    "frontend-package-map": { title: "Frontend Package Map", description: "Core modules (`api`, `store`, `domain`, `hooks`, `services`, `usecases`, `types`, `utils`) are organized to enforce predictable layering and import boundaries.", why: "레이어별 import 경계를 강제해 순환 의존과 기능 확장 시 결합도 상승을 사전에 막기 위해서입니다." },
-    "frontend-rtk-single-source": { title: "RTK Single Source", description: "RTK Query is the single source of truth for server state. Query cache, optimistic patches, and rollback logic are centralized in API services.", why: "낙관적 업데이트와 롤백 규칙을 한곳에 모아 비동기 202 흐름에서도 화면-서버 상태 불일치를 줄이기 위해서입니다." },
-    "frontend-di-composition": { title: "DI Composition Flow", description: "`CoreServicesProvider` assembles hook-factory services, orchestration services, and usecases on top of a shared store for consistent feature wiring.", why: "서비스 조립 지점을 단일화해 테스트 더블 주입과 기능별 교체 비용을 낮추기 위해 구성했습니다." },
-    "frontend-troubleshooting-patterns": { title: "Troubleshooting Patterns", description: "Cache sync, 202-empty-body handling, optimistic consistency, field mapping, and infinite-render guards are documented and reflected in current implementation patterns.", why: "반복된 장애 패턴을 공통 구현 규칙으로 고정해 회귀 버그와 디버깅 시간을 줄이기 위해 정리했습니다." },
-    "devops-ci-change-detection": { title: "CI Change Detection", description: "`dorny/paths-filter` routes PR changes into selective Spring, FastAPI, Frontend, Nginx, and Monitoring jobs so unchanged stacks skip expensive builds.", why: "모노레포 전체 재빌드 비용을 줄이고 변경 범위만 검증해 피드백 시간을 단축하기 위해서입니다." },
-    "devops-ci-integration-gate": { title: "CI Integration Gate", description: "`docker-compose.dev-CI.yml` brings up app plus dependencies, validates health/proxy paths, and blocks promotion until integration checks and Trivy scans pass.", why: "단위 테스트 통과만으로 배포하지 않고 실제 통합 기동 상태를 게이트로 검증해 릴리즈 리스크를 낮추기 위해서입니다." },
-    "devops-cd-wireguard": { title: "CD via WireGuard", description: "Push to `main` or `dev` triggers temporary WireGuard tunnel, remote compose sync, branch-specific env injection, controlled deployment, then guaranteed VPN teardown.", why: "홈서버 배포를 공인 포트 개방 없이 수행하고 배포 종료 후 접근 경로를 자동 회수하기 위해 채택했습니다." },
-    "devops-image-promotion": { title: "Image Promotion Flow", description: "Built SHA tags are resolved to immutable digests and promoted with `imagetools create` into stable branch tags (`--dev`, `--prod`) for deterministic deploys.", why: "태그 재사용으로 인한 드리프트를 막고 동일 digest 재배포를 보장해 롤백/재현성을 확보하기 위해서입니다." },
-    "devops-compose-topology": { title: "Compose Runtime Topology", description: "`dev`, `database`, `network-utils`, and `monitoring` compose layers build one networked runtime with health-gated dependencies across API, data, cert, and telemetry stacks.", why: "서비스 의존성과 기동 순서를 컴포즈 계층으로 명시해 환경별 실행 편차를 줄이기 위해 구성했습니다." },
-    "devops-docker-build-map": { title: "Docker Build Map", description: "Spring Gradle cache mounts, FastAPI uv multi-stage sync, and Nginx+Frontend image assembly are separated into optimized stages with non-root runtime defaults.", why: "이미지별 병목 구간을 분리 최적화해 빌드 시간과 이미지 크기를 함께 줄이기 위해 빌드 경로를 분해했습니다." },
-    "devops-nginx-runtime-validation": { title: "Nginx Runtime Validation", description: "Entrypoint pipeline renders templates, verifies unresolved variables, performs `nginx -t`, and fails fast before serving traffic when configuration is unsafe.", why: "런타임 환경변수 누락이나 잘못된 라우팅 설정을 트래픽 수신 전에 차단하기 위해 fail-fast 검증을 넣었습니다." },
-    "devops-edge-security": { title: "Edge Security Model", description: "Cloudflare Tunnel hides origin IP via outbound-only edge path, while Certbot DNS-01, DDClient, and WireGuard-only SSH keep external attack surface minimized.", why: "원본 서버 노출을 줄이고 원격 접근 경로를 제한해 홈서버 운영의 기본 공격면을 최소화하기 위해서입니다." },
-    "devops-observability-pipeline": { title: "Observability Pipeline", description: "Prometheus scrapes app/exporter metrics, Grafana visualizes metrics/logs, and Alertmanager routes severity-based incidents to Slack with secret-backed webhooks.", why: "장애 인지 시간을 줄이고 원인 추적 경로를 일원화하기 위해 메트릭·로그·알림 파이프라인을 통합했습니다." },
-    "devops-k6-load-architecture": { title: "k6 Load Architecture", description: "Scenario suites share auth refresh/backoff utilities, profile-based ramping (`fast_test`, `stress2000`, `spike`), and optional CDN bypass paths for origin-only analysis.", why: "튜닝 결과 신뢰도를 높이기 위해 동일 조건의 재현 가능한 부하 프로파일을 유지했습니다." },
-    "devops-stress-mode-lifecycle": { title: "Stress Mode Lifecycle", description: "Dedicated workflows toggle stress mode on/refresh/down by composing isolated `.env.stress`, test database stack, and controlled teardown for safe repeatable load tests.", why: "운영 데이터 오염을 방지하기 위해 테스트 환경을 독립 생명주기로 분리했습니다." },
-    "devops-troubleshooting-patterns": { title: "DevOps Troubleshooting", description: "Known incidents include Cloudflare tunnel protocol mismatch, OAuth redirect proto loss, k6 summary rounding blind spots, and high-VU host freeze mitigations.", why: "반복 장애를 줄이기 위해 원인-대응-검증 로그를 런북 형태로 누적했습니다." },
+    "backend-spring-hex": { title: "BE-C01: Hexagonal Architecture", description: "Controller, Application, Domain, Adapter 계층을 포트로 분리하여 도메인 로직을 프레임워크로부터 보호했습니다.", cardClass: "backend-card" },
+    "backend-spring-auth": { title: "BE-C02: 통합 인증 (Spring Auth)", description: "Redis 기반의 Refresh Session 관리와 JwtAuthenticationFilter를 통한 단일 인증 정책을 수립했습니다.", cardClass: "backend-card" },
+    "backend-spring-oauth2": { title: "BE-C16: OAuth2 소셜 로그인 통합", description: "구글, 카카오, 네이버 소셜 로그인을 인터페이스 기반으로 통합하여 채널 확장성을 확보했습니다.", cardClass: "backend-card" },
+    "backend-spring-packages": { title: "BE-C03: 패키지/모듈 분리", description: "도메인별 모듈화를 통해 기능 추가 시 영향 범위를 제한하고 독립적인 유지보수가 가능하게 설계했습니다.", cardClass: "backend-card" },
+    "backend-spring-api-write": { title: "BE-C06: 비동기 쓰기 (API Write Path)", description: "202 Accepted 응답 후 RabbitMQ를 통한 비동기 처리를 도입하여 쓰기 지연을 획기적으로 개선했습니다.", cardClass: "backend-card" },
+    "backend-spring-worker-consume": { title: "BE-C07: 워커 역할 분리", description: "API 서버와 워커 서버의 역할을 분리하여 부하 급증 시에도 사용자 응답성을 최우선으로 보호합니다.", cardClass: "backend-card" },
+    "backend-spring-state-management": { title: "BE-C05: 상태 관리 (State Management)", description: "엔티티 내부의 명확한 상태 전이 규칙을 통해 비동기 처리 중에도 데이터 정합성을 유지합니다.", cardClass: "backend-card" },
+    "backend-spring-troubleshooting": { title: "BE-C08: 병목 재현 및 검증", description: "k6를 활용해 실제 병목 구간을 재현하고 단계적으로 튜닝하여 성능 한계를 확장했습니다.", cardClass: "backend-card" },
+    "backend-fastapi-analyze": { title: "BE-C09: AI 세션 복구", description: "Redis 세션과 Qdrant 컨텍스트를 활용해 AI 분석 도중 장애가 발생해도 맥락을 유지하며 복구합니다.", cardClass: "backend-card" },
+    "backend-fastapi-auth": { title: "BE-C10: AI 보안 인증", description: "FastAPI 요청마다 Spring Auth를 검증하는 구조를 통해 분산 환경에서도 일관된 보안 수준을 유지합니다.", cardClass: "backend-card" },
+    "backend-fastapi-packages": { title: "BE-C11: AI 구조 설계", description: "계층화된 구조 설계를 통해 AI 로직의 테스트 가능성과 인프라 교체 용이성을 확보했습니다.", cardClass: "backend-card" },
+    "backend-fastapi-domain-rules": { title: "BE-C12: LLM 응답 정규화", description: "LLM의 비정형 응답을 JSON으로 정규화하고 매핑 무결성을 검증하는 안전 장치를 마련했습니다.", cardClass: "backend-card" },
+    "backend-fastapi-state-management": { title: "BE-C13: AI 상태 생명주기", description: "분석부터 생성까지의 AI 작업 단계를 Redis 기반 세션으로 관리하여 단계별 일관성을 보장합니다.", cardClass: "backend-card" },
+    "backend-fastapi-feedback": { title: "BE-C14: 매핑 검증 오류 방지", description: "사용자 피드백과 AI 추천 항목 간의 인덱스 매핑을 검증하여 잘못된 태스크 생성을 차단합니다.", cardClass: "backend-card" },
+    "backend-fastapi-troubleshooting": { title: "BE-C15: 외부 API 장애 격리", description: "외부 AI 서비스 장애가 메인 비즈니스 로직으로 전파되지 않도록 서킷 브레이커와 폴백 전략을 적용했습니다.", cardClass: "backend-card" },
+    "frontend-monorepo-architecture": { title: "Frontend Monorepo", description: "Turborepo를 활용해 Web, App 간 공용 로직을 패키지화하고 플랫폼 독립적인 아키텍처를 구축했습니다.", cardClass: "frontend-card" },
+    "frontend-rtk-single-source": { title: "RTK Single Source", description: "RTK Query를 단일 상태원으로 활용하여 서버-클라이언트 간의 데이터 동기화와 낙관적 업데이트를 구현했습니다.", cardClass: "frontend-card" },
+    "frontend-api-bridge": { title: "Frontend API Bridge", description: "Spring과 FastAPI 간의 서로 다른 인증 체계를 프론트엔드 레벨에서 투명하게 연결했습니다.", cardClass: "frontend-card" },
+    "frontend-di-composition": { title: "DI Composition Flow", description: "서비스 조립 지점을 단일화하여 기능 교체와 테스트가 용이한 의존성 주입 구조를 설계했습니다.", cardClass: "frontend-card" },
+    "devops-ci-change-detection": { title: "Selective CI Pipeline", description: "변경 범위에 따라 필요한 스택만 빌드하도록 최적화하여 CI 피드백 시간을 단축했습니다.", cardClass: "devops-card" },
+    "devops-cd-wireguard": { title: "Secure CD via VPN", description: "포트 개방 없이 WireGuard VPN 터널을 통해 안전하게 홈서버로 배포하는 파이프라인을 구축했습니다.", cardClass: "devops-card" },
+    "devops-compose-topology": { title: "Compose Runtime Topology", description: "API, Data, Monitoring 레이어를 컴포즈 계층으로 분리하여 환경별 실행 편차를 제거했습니다.", cardClass: "devops-card" },
+    "devops-observability-pipeline": { title: "Observability Pipeline", description: "Prometheus, Grafana, Loki를 통합하여 장애 감지부터 원인 분석까지의 경로를 일원화했습니다.", cardClass: "devops-card" },
+    "devops-k6-load-architecture": { title: "k6 Load Architecture", description: "재현 가능한 부하 테스트 시나리오를 통해 아키텍처 개선 전후의 성능 지표를 객관적으로 증명했습니다.", cardClass: "devops-card" },
 };
 
-const backendDecisionMeta = {
-    "backend-spring-hex": {
-        cardId: "BE-C01",
-        problem: "도메인 로직이 프레임워크/인프라 변경에 오염될 위험",
-        choice: "Hexagonal 포트/어댑터 경계 고정",
-        result: "도메인-인프라 분리로 교체/리팩토링 비용 감소",
-        tradeOff: "초기 설계 복잡도와 보일러플레이트 증가"
-    },
-    "backend-spring-auth": {
-        cardId: "BE-C02",
-        problem: "Spring/FastAPI 인증 정책 드리프트와 키 관리 중복 위험",
-        choice: "Spring verify 단일 정책 경계 채택",
-        result: "정책 단일화로 인증 기준 일관성 확보",
-        tradeOff: "FastAPI 인증 독립성 저하, verify 경로 의존"
-    },
-    "backend-spring-oauth2": {
-        cardId: "BE-C16",
-        problem: "소셜 로그인 채널 추가 시마다 인증 로직 분기 복잡도 증가",
-        choice: "DI/DIP 기반 채널 추상화 + Naver 화이트리스트 검증 통합",
-        result: "Google/Kakao/Naver 연동 완료, 채널 추가 시 구현체 1개 추가로 확장",
-        tradeOff: "인터페이스 설계 초기 비용 및 채널별 테스트 범위 증가"
-    },
-    "backend-spring-packages": {
-        cardId: "BE-C03",
-        problem: "기능 증가 시 변경 영향 범위 확산",
-        choice: "도메인/기능 중심 패키지 분리 유지",
-        result: "모듈 단위 변경 격리로 유지보수 안정성 강화",
-        tradeOff: "초기 개발 속도 저하, 구조 학습 비용 증가"
-    },
-    "backend-spring-domain-rules": {
-        cardId: "BE-C04",
-        problem: "API별 인라인 검증에서 규칙 누락/편차 누적",
-        choice: "권한/상태/멱등 규칙 도메인 경계 중앙화",
-        result: "규칙 일관성과 테스트 가능성 확보",
-        tradeOff: "클래스/설계 비용 증가로 초기 속도 저하"
-    },
-    "backend-spring-state-management": {
-        cardId: "BE-C05",
-        problem: "비동기 경로에서 상태 불일치 가능",
-        choice: "상태 전이를 엔티티 내부 규칙으로 고정",
-        result: "상태 불변조건과 전이 규칙 일관성 확보",
-        tradeOff: "엔티티 모델 복잡도 증가와 진입장벽 상승을 감수했습니다."
-    },
-    "backend-spring-api-write": {
-        cardId: "BE-C06",
-        problem: "동기 DB 저장으로 쓰기 지연/타임아웃 증가",
-        choice: "202 + Pending + RabbitMQ 비동기 쓰기 경로",
-        result: "WRITE p95 1.9s -> 126ms (@500VU)",
-        tradeOff: "정합성 경계 및 DLQ/재처리 운영 복잡도 증가"
-    },
-    "backend-spring-worker-consume": {
-        cardId: "BE-C07",
-        problem: "API와 소비 로직 결합 시 고부하에서 응답성 저하",
-        choice: "API(발행)/Worker(소비) 역할 분리",
-        result: "피크 부하에서 API 응답성 보호 및 확장성 확보",
-        tradeOff: "배포/운영 포인트(DLQ/모니터링/장애지점) 증가"
-    },
-    "backend-spring-troubleshooting": {
-        cardId: "BE-C08",
-        problem: "병목 원인 불명 상태에서 튜닝 회귀 반복",
-        choice: "k6 재현-수정-검증 루프 고정",
-        result: "READ p95 975ms -> 141ms, WRITE p95 1.9s -> 126ms",
-        tradeOff: "테스트 구축/분석 시간 증가, 저트래픽 구간 과투자 위험"
-    },
-    "backend-fastapi-analyze": {
-        cardId: "BE-C09",
-        problem: "단순 추론 호출 시 분석 품질/복구 일관성 저하",
-        choice: "Spring verify + Redis 세션 + Qdrant 컨텍스트 선행",
-        result: "분석 맥락 보존 및 복구 가능한 경로 확보",
-        tradeOff: "외부 의존성/네트워크 hop 증가"
-    },
-    "backend-fastapi-auth": {
-        cardId: "BE-C10",
-        problem: "AI 경로에서 인증 실행 누락/정책 불일치 위험",
-        choice: "요청 단위 Spring verify 호출로 실행 강제",
-        result: "인증 일관성 확보: FastAPI 보호 엔드포인트 정책 실행 경로 단일화",
-        tradeOff: "가용성 의존 증가: 네트워크 hop 증가와 Spring verify 의존"
-    },
-    "backend-fastapi-packages": {
-        cardId: "BE-C11",
-        problem: "Flat 구조에서 의존성 얽힘/교체 난이도 증가",
-        choice: "API/Service/Domain/Infra 계층 분리",
-        result: "테스트 더블 주입과 외부의존 교체 용이성 확보",
-        tradeOff: "초기 DI/설계 비용 및 디버깅 경로 증가"
-    },
-    "backend-fastapi-domain-rules": {
-        cardId: "BE-C12",
-        problem: "LLM 포맷 오염이 생성 경로로 전파될 위험",
-        choice: "JSON 정규화 + fallback + 매핑 무결성 검증",
-        result: "파싱 실패/오입력의 후속 전파 차단",
-        tradeOff: "규칙 분기 코드 증가, 추천 다양성 일부 저하 가능"
-    },
-    "backend-fastapi-state-management": {
-        cardId: "BE-C13",
-        problem: "analyze->feedback->create 다단계 상태 불일치 위험",
-        choice: "Redis 세션 수명주기/스냅샷 갱신 고정",
-        result: "세션 기반 단계 일관성 및 재시도 복구성 확보",
-        tradeOff: "세션 만료/정리 운영 부담 증가"
-    },
-    "backend-fastapi-feedback": {
-        cardId: "BE-C14",
-        problem: "잘못된 선택 인덱스로 오생성 task 발생 가능",
-        choice: "세션 스냅샷 매핑 후 Spring 생성 API 위임",
-        result: "유효 인덱스/매핑 검증으로 오생성 차단",
-        tradeOff: "경로 복잡도 증가, 추가 hop 발생"
-    },
-    "backend-fastapi-troubleshooting": {
-        cardId: "BE-C15",
-        problem: "외부 의존 장애가 전체 기능으로 전파될 위험",
-        choice: "verify/fallback/유효성 분기 기반 안전 저하 전략",
-        result: "전체 fail-fast 대신 부분 기능 축소로 복구 가능성 확보",
-        tradeOff: "오류 분기 코드 증가, 디버깅 난이도 상승"
-    }
-};
-
-const mapCards = (ids) => ids.map((id) => {
-    const baseMeta = cardMeta[id] ?? {};
-    const decisionMeta = backendDecisionMeta[id];
-    return {
-        mermaidId: id,
-        title: baseMeta.title ?? id,
-        subtitle: '',
-        description: decisionMeta ? `Problem: ${decisionMeta.problem}` : (baseMeta.description ?? ''),
-        highlights: decisionMeta ? [
-            `Choice: ${decisionMeta.choice}`,
-            `Result: ${decisionMeta.result}`,
-            `Trade-off: ${decisionMeta.tradeOff}`
-        ] : [],
-        why: baseMeta.why ?? '',
-        links: [
-            { label: 'EVIDENCE', href: `./evidence/l_n_project/index.html#${id}`, variant: 'primary' },
-            { label: 'README', href: learnMoreLinks[id] ?? '#', variant: 'ghost' }
-        ]
-    };
-});
+const mapCards = (ids) => ids.map((id) => ({
+    mermaidId: id,
+    title: cardMeta[id]?.title ?? id,
+    description: cardMeta[id]?.description ?? '',
+    links: [
+        { label: 'EVIDENCE', href: `./evidence/l_n_project/index.html#${id}`, variant: 'primary' },
+        { label: 'README', href: learnMoreLinks[id] ?? '#', variant: 'ghost' }
+    ],
+    cardClass: cardMeta[id]?.cardClass ?? ''
+}));
 
 export const templateConfig = {
     system: {
-        documentTitle: 'Yohan | Life Navigation Architecture Dashboard',
-        systemName: 'LIFE_NAVIGATION_ARCHITECTURE_V.3.2'
+        documentTitle: 'Yohan | Life Navigation Full-stack Architect',
+        systemName: 'LIFE_NAVIGATION_ARCHITECTURE_V.2026'
     },
 
     hero: {
-        sectionId: 'system-architecture',
+        sectionId: 'system-overview',
         panelTitle: 'SYSTEM_OVERVIEW',
-        panelUid: 'ID: LIFE-NAV-01',
+        panelUid: 'ID: LIFE-NAV-00',
         diagramId: 'architecture',
         metrics: [
-            'POSITION: Backend-first System Architect (Life Navigation backend)',
-            'PROBLEM: 고부하 요청에서 지연 급증과 정합성 리스크가 누적되었습니다.',
-            'CHOICE: Spring Hexagonal + API/Worker 분리 + FastAPI AI 경계 분리를 적용했습니다.',
-            'RESULT: READ p95 975ms -> 141ms, WRITE p95 1.9s -> 126ms (@500VU).',
-            'TRADE-OFF: DLQ/재처리 파이프라인과 서비스 간 verify로 인한 운영 복잡도를 감수했습니다.'
+            'POSITION: Backend-first Full-stack Architect',
+            'CORE: High-Performance Async Architecture & AI Pipeline',
+            'RESULT: Read RPS 3,680 달성, Write p95 126ms (15배 개선)',
+            'BASELINE: 500VU 고부하 실측 증거 기반'
         ],
-        actions: [
-            {
-                label: 'BE-C01~BE-C16 자세히 보기',
-                openLabel: 'BE-C01~BE-C16 닫기',
-                action: 'toggle_panel',
-                target: '#system-architecture-detail'
-            }
+        quickLinks: [
+            { label: 'GITHUB_REPO', href: 'https://github.com/ramyo564/L_N_Project', variant: 'primary' },
+            { label: 'PROBLEM_SOLVING', href: 'https://ramyo564.github.io/L_N_Project-portfolio/', variant: 'secondary' },
+            { label: 'PORTFOLIO_HUB', href: 'https://ramyo564.github.io/Portfolio/', variant: 'ghost' }
         ]
     },
 
     topPanels: [
         {
-            sectionId: 'system-architecture-detail',
-            panelTitle: 'SYSTEM_ARCHITECTURE_DETAIL',
-            panelUid: 'ID: LIFE-NAV-02',
-            navLabel: 'ARCH_DETAIL',
-            showInNav: false,
-            defaultHidden: true,
-            linkGroups: [
-                {
-                    title: "SPRING CORE & INFRA",
-                    desc: "백엔드 통합/분리 및 트래픽 분산 설계",
-                    links: [
-                        { label: 'BE-C01: Hexagonal', id: 'backend-spring-hex' },
-                        { label: 'BE-C02: 통합 인증', id: 'backend-spring-auth' },
-                        { label: 'BE-C16: OAuth2 통합', id: 'backend-spring-oauth2' },
-                        { label: 'BE-C03: 모듈 분리', id: 'backend-spring-packages' },
-                        { label: 'BE-C06: 비동기 쓰기', id: 'backend-spring-api-write' },
-                        { label: 'BE-C07: 워커 분리', id: 'backend-spring-worker-consume' }
-                    ]
-                },
-                {
-                    title: "DOMAIN RULES & DATA",
-                    desc: "정합성 및 상태 생명주기 제어",
-                    links: [
-                        { label: 'BE-C04: 도메인 규칙', id: 'backend-spring-domain-rules' },
-                        { label: 'BE-C05: 상태 관리', id: 'backend-spring-state-management' },
-                        { label: 'BE-C08: 병목 재현/검증', id: 'backend-spring-troubleshooting' }
-                    ]
-                },
-                {
-                    title: "FASTAPI & AI INTEGRATION",
-                    desc: "인증 보안, AI 파이프라인 및 장애 한계선 제어",
-                    links: [
-                        { label: 'BE-C10: AI 보안 인증', id: 'backend-fastapi-auth' },
-                        { label: 'BE-C11: AI 구조 설계', id: 'backend-fastapi-packages' },
-                        { label: 'BE-C15: 외부 API 장애 격리', id: 'backend-fastapi-troubleshooting' },
-                        { label: 'BE-C12: LLM 응답 정규화', id: 'backend-fastapi-domain-rules' },
-                        { label: 'BE-C13: AI 상태 생명주기', id: 'backend-fastapi-state-management' },
-                        { label: 'BE-C14: 매핑 검증 오류 방지', id: 'backend-fastapi-feedback' },
-                        { label: 'BE-C09: AI 세션 복구', id: 'backend-fastapi-analyze' }
-                    ]
-                }
-            ],
+            sectionId: 'backend-architecture-spring',
+            panelTitle: "SPRING_BOOT_CORE_ARCHITECTURE",
+            panelUid: "ID: LIFE-NAV-BE-SPR",
+            diagramId: 'backend-spring-core',
+            navLabel: 'SPRING_ARCH',
             metrics: [
-                'GUIDE: 원하시는 아키텍처 결정을 클릭하면 카드로 바로 이동합니다.'
+                "Architecture: Hexagonal (Ports & Adapters) for Domain Protection",
+                "Transaction: 202 Accepted + RabbitMQ for High-Throughput Writes",
+                "Security: JWT + Redis-based Unified Authentication Filter",
+                "Stability: Explicit API/Worker Separation for Load Balancing"
             ]
         }
     ],
@@ -255,101 +82,322 @@ export const templateConfig = {
     skills: {
         sectionId: 'skill-set',
         panelTitle: 'SKILL_SET',
-        panelUid: 'ID: SKILL-SET',
+        panelUid: 'ID: STACK-MAP',
         items: [
             { title: 'BACKEND', stack: 'Java 21, Spring Boot 3, Python 3.11, FastAPI' },
             { title: 'DATA', stack: 'PostgreSQL 15, Redis, RabbitMQ, Qdrant' },
             { title: 'FRONTEND', stack: 'React 19, TypeScript 5, RTK Query, Turborepo' },
-            { title: 'DEVOPS', stack: 'Docker Compose, GitHub Actions, WireGuard, Cloudflare, Nginx' },
-            { title: 'OBSERVABILITY', stack: 'Prometheus, Grafana, Loki, Alertmanager, k6' }
+            { title: 'DEVOPS', stack: 'Docker Compose, GitHub Actions, WireGuard, Cloudflare' },
+            { title: 'OPS', stack: 'Prometheus, Grafana, Loki, Alertmanager, k6' }
         ]
     },
 
     serviceSections: [
         {
-            id: 'backend-services',
-            title: 'BACKEND_SERVICES',
-            navLabel: 'BACKEND_SERVICES',
-            summary: '기본 노출은 대표 3개 결정(BE-C06/BE-C05/BE-C10)만 유지합니다. 나머지 Backend Inventory는 토글로 확장해 확인할 수 있습니다.',
+            id: 'architecture-quick-scan',
+            title: 'ARCHITECTURE_QUICK_SCAN',
+            navLabel: 'QUICK_SCAN',
+            theme: 'blue',
+            recruiterBrief: {
+                kicker: 'CORE_SYSTEM_PILLARS',
+                title: '시스템 설계 핵심 요약 (Architecture Overview)',
+                cases: [
+                    {
+                        id: 'Backend',
+                        title: 'Java Spring & Python FastAPI (Hybrid)',
+                        problem: '고부하 트래픽 처리(Core)와 리소스 집중형 분석 로직(AI)의 성능 상충',
+                        action: 'Spring(비즈니스)과 FastAPI(AI)의 물리적 분리 및 RabbitMQ를 통한 비동기 서비스 연동',
+                        impact: '영역별 독립적 스케일링 및 장애 격리 확보 (Read RPS 3,680 / Write p95 126ms)',
+                        links: [{ label: 'SHOW_BACKEND_DETAILS', href: '#backend-overview' }]
+                    },
+                    {
+                        id: 'DevOps',
+                        title: '보안 배포 및 성능 검증 체계',
+                        problem: '홈서버 환경의 보안 제약(IP 노출) 및 정량적인 성능 임계치 미파악',
+                        action: 'WireGuard VPN 기반 CD 구축 및 k6 시나리오 자동화를 통한 반복 검증 루프',
+                        impact: '외부 공격면 최소화 및 500VU 고부하 환경에서의 시스템 신뢰성 최종 입증',
+                        links: [{ label: 'SHOW_DEVOPS_DETAILS', href: '#devops-services' }]
+                    },
+                    {
+                        id: 'Frontend',
+                        title: '확장 가능한 모노레포 구조',
+                        problem: '다양한 플랫폼 지원 시 발생하는 코드 중복 및 비동기 응답 처리의 데이터 불일치',
+                        action: 'Turborepo 기반 패키지화 및 RTK Query 단일 상태원(SSOT) 적용',
+                        impact: '비즈니스 로직 재사용성 극대화 및 비동기 환경에서의 데이터 정합성 유지',
+                        links: [{ label: 'SHOW_FRONTEND_DETAILS', href: '#frontend-services' }]
+                    }
+                ]
+            }
+        },
+        {
+            id: 'backend-overview',
+            title: 'BACKEND_ARCHITECTURE_OVERVIEW',
+            navLabel: 'BACKEND_OVERVIEW',
+            theme: 'blue',
+            recruiterBrief: {
+                kicker: 'SYSTEM_COMPOSITION',
+                title: '백엔드 엔진 구성 (Spring & FastAPI)',
+                cases: [
+                    {
+                        id: 'Spring Boot',
+                        title: '비즈니스 로직 및 고성능 트랜잭션 엔진',
+                        problem: '대규모 트래픽 처리와 복잡한 비즈니스 규칙의 안정적 관리 필요',
+                        action: 'Hexagonal Architecture 기반 도메인 보호 및 비동기 쓰기 최적화',
+                        impact: '시스템 코어 엔진으로서 데이터 무결성 및 고가용성 보장',
+                        links: [{ label: 'SHOW_SPRING_DESIGN', href: '#backend-spring-core-summary' }]
+                    },
+                    {
+                        id: 'FastAPI',
+                        title: 'AI 추천 및 데이터 분석 파이프라인',
+                        problem: '실시간 AI 분석 부하로부터 메인 비즈니스 런타임 보호 필요',
+                        action: 'Python 기반 AI 전용 파이프라인 구축 및 Redis 세션 기반 복구 경로',
+                        impact: '독립적인 AI 서비스 스케일링 및 장애 한계선 확보',
+                        links: [{ label: 'SHOW_FASTAPI_DESIGN', href: '#backend-fastapi-detail' }]
+                    }
+                ]
+            }
+        },
+        {
+            id: 'backend-spring-core-summary',
+            title: 'SPRING_BOOT_CORE_DESIGN_SUMMARY',
+            navLabel: 'SPRING_CORE',
+            theme: 'blue',
+            recruiterBrief: {
+                kicker: 'SPRING_CORE_DESIGN',
+                title: 'Spring Boot 설계 핵심 요약 (Core Decisions)',
+                cases: [
+                    {
+                        id: 'BE-C01',
+                        anchorId: 'backend-spring-hex',
+                        title: 'Hexagonal Architecture (도메인 보호)',
+                        problem: '인프라 기술이 비즈니스 로직에 침투하여 결합도 상승',
+                        action: 'Ports & Adapters 패턴을 통한 계층 분리',
+                        impact: '순수 도메인 테스트 및 인프라 교체 비용 최소화'
+                    },
+                    {
+                        id: 'BE-C06',
+                        anchorId: 'backend-spring-api-write',
+                        title: '비동기 쓰기 경로 최적화 (성능)',
+                        problem: '동기 DB 저장으로 인한 API 응답 지연',
+                        action: '202 Accepted 즉시 응답 + RabbitMQ Outbox 기반 비동기 처리',
+                        impact: 'Write p95 지연 시간 15배 단축 (1.9s -> 126ms)'
+                    },
+                    {
+                        id: 'BE-C05',
+                        anchorId: 'backend-spring-state-management',
+                        title: '상태 관리 규칙 정의 (정합성)',
+                        problem: '비동기 환경에서의 엔티티 상태 전이 모호성',
+                        action: '도메인 모델 내부에 명확한 상태 전이 및 불변 규칙 정의',
+                        impact: '고동시성 상황에서도 비즈니스 데이터 무결성 유지'
+                    },
+                    {
+                        id: 'BE-C02',
+                        anchorId: 'backend-spring-auth',
+                        title: '통합 인증 필터 및 보안 (보안)',
+                        problem: '인증 정책 파편화 및 중복 유저 조회 발생',
+                        action: 'JWT Claims 기반 인증 + Redis 연동 단일 보안 필터',
+                        impact: '인증 쿼리 최소화(3→1) 및 일관된 보안 정책 강제'
+                    }
+                ],
+                links: [
+                    { label: 'SHOW_SPRING_DIAGRAM', href: '#backend-architecture-spring', variant: 'primary' }
+                ]
+            }
+        },
+        {
+            id: 'backend-spring-infra-summary',
+            title: 'SPRING_BOOT_INFRA_DESIGN_SUMMARY',
+            navLabel: 'SPRING_INFRA',
+            theme: 'blue',
+            recruiterBrief: {
+                kicker: 'SPRING_INFRA_DESIGN',
+                title: 'Spring Boot 인프라 및 운영 요약 (Infra & Ops)',
+                cases: [
+                    {
+                        id: 'BE-C07',
+                        anchorId: 'backend-spring-worker-consume',
+                        title: 'API/Worker 역할 분리 (확장성)',
+                        problem: '단일 서버 내 발행/소비 로직 혼재로 부하 전파 위험',
+                        action: '물리적 서버 역할 분리를 통한 부하 분산 및 전용 컨슈머 운영',
+                        impact: '피크 부하 시에도 사용자 요청 경로 안정성 100% 보호'
+                    },
+                    {
+                        id: 'BE-C03',
+                        anchorId: 'backend-spring-packages',
+                        title: '패키지/모듈 분리 (유지보수)',
+                        problem: '기능 증가 시 변경 영향 범위 확산 및 결합도 상승',
+                        action: '도메인/기능 중심 모듈화 및 계층간 참조 규칙 강제',
+                        impact: '모듈 단위 변경 격리로 리팩토링 및 확장 안정성 확보'
+                    },
+                    {
+                        id: 'BE-C08',
+                        anchorId: 'backend-spring-troubleshooting',
+                        title: '병목 재현 및 검증 (관측성)',
+                        problem: '병목 원인 불명 상태에서 튜닝 회귀 반복 및 데이터 부재',
+                        action: 'k6 재현-수정-검증 루프 고정 및 실측 지표 수집',
+                        impact: '객관적인 성능 임계치 파악 및 최적화 효과 실측 데이터 확보'
+                    },
+                    {
+                        id: 'BE-C16',
+                        anchorId: 'backend-spring-oauth2',
+                        title: 'OAuth2 소셜 로그인 통합 (확장성)',
+                        problem: '채널 추가 시마다 인증 로직 분기 및 코드 복잡도 증가',
+                        action: '인터페이스 기반 채널 추상화 및 DI 통합 구조 설계',
+                        impact: '코드 수정 없는 신규 채널 확장성 및 일관된 인증 경험'
+                    }
+                ]
+            }
+        },
+        {
+            id: 'backend-spring-details',
+            title: 'SPRING_BOOT_TECHNICAL_DECISIONS',
+            navLabel: 'SPRING_DETAILS',
             theme: 'blue',
             cardVisualHeight: '290px',
-            cardClass: 'backend-card',
             groups: [
                 {
-                    title: 'BACKEND CORE DECISIONS (FEATURED 3)',
-                    desc: 'Default Open: BE-C06 / BE-C05 / BE-C10',
-                    cards: mapCards(["backend-spring-api-write", "backend-spring-state-management", "backend-fastapi-auth"])
+                    title: 'SPRING CORE DECISIONS',
+                    desc: '핵심 설계 및 성능 튜닝',
+                    cards: mapCards(["backend-spring-hex", "backend-spring-api-write", "backend-spring-state-management", "backend-spring-auth"])
                 },
                 {
-                    title: 'SPRING STACK (REMAINING INVENTORY)',
-                    desc: 'Collapsed by default: BE-C01 / BE-C02 / BE-C03 / BE-C04 / BE-C07 / BE-C08',
-                    collapsible: true,
-                    defaultCollapsed: true,
-                    cards: mapCards(["backend-spring-hex", "backend-spring-auth", "backend-spring-oauth2", "backend-spring-packages", "backend-spring-domain-rules", "backend-spring-worker-consume", "backend-spring-troubleshooting"])
-                },
-                {
-                    title: 'FASTAPI STACK (REMAINING INVENTORY)',
-                    desc: 'Collapsed by default: BE-C09 / BE-C11 / BE-C12 / BE-C13 / BE-C14 / BE-C15',
-                    collapsible: true,
-                    defaultCollapsed: true,
-                    cards: mapCards(["backend-fastapi-analyze", "backend-fastapi-packages", "backend-fastapi-domain-rules", "backend-fastapi-state-management", "backend-fastapi-feedback", "backend-fastapi-troubleshooting"])
+                    title: 'SPRING INFRA & OPS',
+                    desc: '워커 분리 및 병목 검증',
+                    cards: mapCards(["backend-spring-worker-consume", "backend-spring-packages", "backend-spring-troubleshooting", "backend-spring-oauth2"])
                 }
             ]
         },
         {
-            id: 'load-reliability-services',
-            title: 'LOAD_AND_RELIABILITY',
-            navLabel: 'LOAD_RELIABILITY',
-            summary: 'PROBLEM: 스케일 테스트 중 튜닝 회귀와 숨은 실패 모드가 반복되었습니다. CHOICE: 재현 가능한 k6 프로파일 + 분리된 stress lifecycle + 반복 검증 흐름을 구축했습니다. RESULT: READ p95 975ms -> 141ms, stress 검증 재현성을 확보했습니다.',
-            theme: 'orange',
-            cardVisualHeight: '265px',
-            cardClass: 'devops-card',
+            id: 'backend-fastapi-detail',
+            title: 'FASTAPI_ARCHITECTURE_DEEP_DIVE',
+            navLabel: 'FASTAPI_DETAIL',
+            theme: 'blue',
+            cardVisualHeight: '290px',
+            recruiterBrief: {
+                kicker: 'FASTAPI_AI_DESIGN',
+                title: 'FastAPI AI 파이프라인 핵심 요약 (Architecture Strategy)',
+                cases: [
+                    {
+                        id: 'AI_Auth',
+                        anchorId: 'backend-fastapi-auth',
+                        title: '서비스 간 통합 보안 인증',
+                        problem: '분산 환경의 FastAPI AI 경로에서의 보안 공백 및 인증 정책 불일치 리스크',
+                        action: 'Spring Auth Verify 연동을 통한 요청 단위 보안 필터 및 전용 httpx 클라이언트 구축',
+                        impact: '분산 서버 환경에서도 Spring Core와 동일한 수준의 보안 가드레일 강제'
+                    },
+                    {
+                        id: 'AI_Pipeline',
+                        anchorId: 'backend-fastapi-analyze',
+                        title: '지능형 세션 복구 및 분석',
+                        problem: '무거운 AI 분석 중 네트워크 장애 시 작업 맥락 상실 및 중복 연산 발생',
+                        action: 'Redis 기반 세션 스냅샷 저장 및 Qdrant 벡터 컨텍스트 선행 로딩 아키텍처',
+                        impact: '장애 발생 시에도 중단 지점부터 즉시 복구 가능한 회복 탄력성(Resilience) 확보'
+                    },
+                    {
+                        id: 'AI_Resilience',
+                        anchorId: 'backend-fastapi-troubleshooting',
+                        title: '외부 API 장애 격리 및 폴백',
+                        problem: 'LLM 등 외부 API 장애가 전체 서비스 가용성 저하로 전파',
+                        action: '비정형 응답 정규화(JSON) 및 단계적 기능 저하(Graceful Degradation) 전략 적용',
+                        impact: '외부 의존 장애 상황에서도 핵심 분석 기능 및 사용자 경험 방어'
+                    }
+                ],
+                links: [
+                    { label: 'SHOW_FASTAPI_DIAGRAM', href: '#backend-architecture-fastapi', variant: 'primary' }
+                ]
+            },
             groups: [
                 {
-                    title: 'PERFORMANCE & INCIDENT OPERATIONS',
-                    desc: 'k6 Profiles / Stress Mode Lifecycle / Troubleshooting',
-                    cards: mapCards(["devops-k6-load-architecture", "devops-stress-mode-lifecycle", "devops-troubleshooting-patterns"])
+                    title: 'FASTAPI AI PIPELINE',
+                    desc: 'AI 분석, 보안 및 장애 격리',
+                    cards: mapCards(["backend-fastapi-auth", "backend-fastapi-analyze", "backend-fastapi-state-management", "backend-fastapi-domain-rules", "backend-fastapi-feedback", "backend-fastapi-troubleshooting", "backend-fastapi-packages"])
                 }
             ]
         },
         {
             id: 'devops-services',
-            title: 'DEVOPS_SERVICES (OPTIONAL)',
-            navLabel: 'DEVOPS_OPTIONAL',
-            summary: '보조 섹션: Selective CI + WireGuard CD + runtime validation + observability pipeline 요약입니다.',
+            title: 'DEVOPS_ARCHITECTURE_DEEP_DIVE',
+            navLabel: 'DEVOPS',
             theme: 'orange',
             cardVisualHeight: '265px',
-            cardClass: 'devops-card',
-            collapsible: true,
-            defaultCollapsed: true,
-            toggleLabel: 'OPTIONAL DETAILS: DEVOPS',
-            toggleHint: '펼쳐서 상세 보기',
+            recruiterBrief: {
+                kicker: 'DEVOPS_PERFORMANCE_STRATEGY',
+                title: '배포 안정성 및 관측성 핵심 요약',
+                cases: [
+                    {
+                        id: 'Delivery',
+                        anchorId: 'devops-cd-wireguard',
+                        title: '보안 중심의 제로 터치 배포',
+                        problem: '공인 IP 개방 없는 홈서버 환경으로의 안전한 배포 경로 확보 필요',
+                        action: 'WireGuard VPN 터널을 통한 임시 보안 경로 구축 및 CD 자동화',
+                        impact: '외부 공격 노출면 제거 및 안정적인 원격 배포 파이프라인 확보'
+                    },
+                    {
+                        id: 'Validation',
+                        anchorId: 'devops-k6-load-architecture',
+                        title: '부하 테스트 기반 성능 검증',
+                        problem: '아키텍처 개선 전후의 성과를 입증할 객관적 성능 지표 부재',
+                        action: 'k6 부하 테스트 시나리오 자동화 및 관측성 지표 통합 분석',
+                        impact: '500VU 고부하 환경 성능 증명 및 기술적 결정 근거 확보'
+                    },
+                    {
+                        id: 'Observability',
+                        anchorId: 'devops-observability-pipeline',
+                        title: '통합 관측성 파이프라인',
+                        problem: '분산 환경에서의 장애 인지 지연 및 원인 추적 경로 파편화',
+                        action: 'Prometheus, Grafana, Loki를 활용한 메릭·로그·알림 통합',
+                        impact: '장애 조기 감지 및 원인 분석 리드타임 획기적 단축'
+                    }
+                ]
+            },
             groups: [
                 {
-                    title: 'DELIVERY PIPELINE',
-                    desc: 'Selective CI / Integration Gate / Secure CD / Image Promotion',
-                    cards: mapCards(["devops-ci-change-detection", "devops-ci-integration-gate", "devops-cd-wireguard", "devops-image-promotion"])
+                    title: "DELIVERY & INFRA",
+                    desc: "CI/CD 및 런타임 환경",
+                    cards: mapCards(["devops-ci-change-detection", "devops-cd-wireguard", "devops-compose-topology"])
                 },
                 {
-                    title: 'RUNTIME INFRA',
-                    desc: 'Compose Topology / Build Strategy / Nginx Validation / Edge Security / Observability',
-                    cards: mapCards(["devops-compose-topology", "devops-docker-build-map", "devops-nginx-runtime-validation", "devops-edge-security", "devops-observability-pipeline"])
+                    title: "OPS & RELIABILITY",
+                    desc: "모니터링 및 성능 실측",
+                    cards: mapCards(["devops-observability-pipeline", "devops-k6-load-architecture"])
                 }
             ]
         },
         {
             id: 'frontend-services',
-            title: 'FRONTEND_SERVICES (OPTIONAL)',
-            navLabel: 'FRONTEND_OPTIONAL',
-            summary: '보조 섹션: Monorepo 경계 + RTK Query 단일 상태원 + DI composition 요약입니다.',
+            title: 'FRONTEND_ARCHITECTURE_DEEP_DIVE',
+            navLabel: 'FRONTEND',
             theme: 'green',
             cardVisualHeight: '260px',
-            cardClass: 'frontend-card',
-            collapsible: true,
-            defaultCollapsed: true,
-            toggleLabel: 'OPTIONAL DETAILS: FRONTEND',
-            toggleHint: '펼쳐서 상세 보기',
-            cards: mapCards(["frontend-monorepo-architecture", "frontend-api-bridge", "frontend-package-map", "frontend-rtk-single-source", "frontend-di-composition", "frontend-troubleshooting-patterns"])
+            recruiterBrief: {
+                kicker: 'FRONTEND_ARCHITECTURE_STRATEGY',
+                title: '모노레포 및 상태 관리 핵심 요약',
+                cases: [
+                    {
+                        id: 'Monorepo',
+                        anchorId: 'frontend-monorepo-architecture',
+                        title: '확장 가능한 모노레포 구조',
+                        problem: 'Web/App 간 코드 중복 및 플랫폼 독립적인 비즈니스 로직 관리의 어려움',
+                        action: 'Turborepo 기반 패키지 분리 및 플랫폼 어댑터 패턴 적용',
+                        impact: '로직 재사용성 극대화 및 플랫폼 추가 시 개발 비용 최소화'
+                    },
+                    {
+                        id: 'State',
+                        anchorId: 'frontend-rtk-single-source',
+                        title: '서버 상태 동기화 최적화',
+                        problem: '비동기 응답(202) 흐름에서의 UI-서버 간 데이터 불일치 및 사용자 경험 저하',
+                        action: 'RTK Query SSOT 적용 및 낙관적 업데이트/롤백 로직 중앙화',
+                        impact: '복잡한 비동기 환경에서도 높은 데이터 정합성과 응답성 유지'
+                    }
+                ]
+            },
+            groups: [
+                {
+                    title: 'FRONTEND CORE',
+                    desc: '모노레포 및 상태 관리 설계',
+                    cards: mapCards(["frontend-monorepo-architecture", "frontend-rtk-single-source", "frontend-api-bridge", "frontend-di-composition"])
+                }
+            ]
         }
     ],
 
@@ -357,10 +405,10 @@ export const templateConfig = {
         sectionId: 'contact',
         panelTitle: 'CONTACT',
         panelUid: 'ID: COMMS-01',
-        description: 'Submit transmission to initiate collaboration.',
+        description: '시스템 아키텍처 및 풀스택 설계 관련 협업 문의는 아래 채널로 부탁드립니다.',
         actions: [
+            { label: 'GITHUB_REPO', href: 'https://github.com/ramyo564/L_N_Project' },
             { label: 'SEND_EMAIL', href: 'mailto:yohan032yohan@gmail.com' },
-            { label: 'GITHUB', href: 'https://github.com/ramyo564' },
             { label: 'EVIDENCE', href: './evidence/l_n_project/index.html' },
             { label: 'YOUTUBE', href: 'https://www.youtube.com/@yohanjang-xe9td' }
         ]

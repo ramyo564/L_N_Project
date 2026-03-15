@@ -1,4 +1,37 @@
 export const diagrams = {
+    'backend-spring-core': `
+            graph TB
+            subgraph Spring_Core [Spring Boot Core Architecture]
+                In[Web/Messaging Adapters] --> App[Application Services]
+                App --> Domain[Hexagonal Domain]
+                Domain --> Out[Persistence/Event Adapters]
+            end
+            subgraph Spring_Infra [Infra & Async]
+                Out --> DB[(PostgreSQL)]
+                Out --> Cache[(Redis)]
+                Out --> MQ((RabbitMQ))
+            end
+            classDef b fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+            classDef g fill:#161b22,stroke:#238636,color:#c9d1d9
+            class In,App,Domain b
+            class Out,DB,Cache,MQ g
+        `,
+    'backend-fastapi-core': `
+            graph TB
+            subgraph AI_Pipeline [FastAPI AI Pipeline]
+                API[Analyze API] --> AS[Analysis Service]
+                AS --> RE[Recommendation Engine]
+                RE --> QD[(Qdrant Vector)]
+                RE --> LLM[External LLM]
+            end
+            subgraph AI_Auth [Security]
+                API --> Verify[Spring Auth Verify]
+            end
+            classDef b fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+            classDef o fill:#161b22,stroke:#d29922,color:#c9d1d9
+            class API,AS,RE b
+            class Verify,QD,LLM o
+        `,
     'architecture-simple': `
             graph LR
             CLIENT[Client]
