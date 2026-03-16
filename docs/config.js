@@ -2,6 +2,7 @@ import { diagrams } from './diagrams.js';
 import { learnMoreLinks } from './learnmore-links.js';
 
 const cardMeta = {
+    "backend-spring-core": { title: "Spring Boot Core Architecture", description: "전체적인 Hexagonal Architecture 구조와 API/Worker 분리, 외부 인프라 연동 흐름을 도식화했습니다.", cardClass: "backend-card" },
     "backend-spring-hex": { title: "BE-C01: Hexagonal Architecture", description: "Controller, Application, Domain, Adapter 계층을 포트로 분리하여 도메인 로직을 프레임워크로부터 보호했습니다.", cardClass: "backend-card" },
     "backend-spring-auth": { title: "BE-C02: 통합 인증 (Spring Auth)", description: "Redis 기반의 Refresh Session 관리와 JwtAuthenticationFilter를 통한 단일 인증 정책을 수립했습니다.", cardClass: "backend-card" },
     "backend-spring-oauth2": { title: "BE-C16: OAuth2 소셜 로그인 통합", description: "구글, 카카오, 네이버 소셜 로그인을 인터페이스 기반으로 통합하여 채널 확장성을 확보했습니다.", cardClass: "backend-card" },
@@ -51,10 +52,12 @@ export const templateConfig = {
         panelUid: 'ID: LIFE-NAV-00',
         diagramId: 'architecture',
         metrics: [
-            'POSITION: Backend-first Full-stack Architect',
-            'CORE: High-Performance Async Architecture & AI Pipeline',
-            'RESULT: Read RPS 3,680 달성, Write p95 126ms (15배 개선)',
-            'BASELINE: 500VU 고부하 실측 증거 기반'
+            'Architecture: Hexagonal (Ports & Adapters) for Domain Protection',
+            'Core: High-Performance Async Architecture & AI Pipeline',
+            'Result: Read RPS 3,680 달성, Write p95 126ms (15배 개선)',
+            'Baseline: 500VU 실측 증거 기반',
+            'Security: JWT + Redis-based Unified Authentication Filter',
+            'Stability: Explicit API/Worker Separation for Load Balancing'
         ],
         quickLinks: [
             { label: 'GITHUB_REPO', href: 'https://github.com/ramyo564/L_N_Project', variant: 'primary' },
@@ -63,21 +66,7 @@ export const templateConfig = {
         ]
     },
 
-    topPanels: [
-        {
-            sectionId: 'backend-architecture-spring',
-            panelTitle: "SPRING_BOOT_CORE_ARCHITECTURE",
-            panelUid: "ID: LIFE-NAV-BE-SPR",
-            diagramId: 'backend-spring-core',
-            navLabel: 'SPRING_ARCH',
-            metrics: [
-                "Architecture: Hexagonal (Ports & Adapters) for Domain Protection",
-                "Transaction: 202 Accepted + RabbitMQ for High-Throughput Writes",
-                "Security: JWT + Redis-based Unified Authentication Filter",
-                "Stability: Explicit API/Worker Separation for Load Balancing"
-            ]
-        }
-    ],
+    topPanels: [],
 
     skills: {
         sectionId: 'skill-set',
@@ -166,6 +155,14 @@ export const templateConfig = {
                 kicker: 'SPRING_CORE_DESIGN',
                 title: 'Spring Boot 설계 핵심 요약 (Core Decisions)',
                 cases: [
+                    {
+                        id: 'Architecture',
+                        anchorId: 'backend-spring-core',
+                        title: 'Spring Boot Core Architecture',
+                        problem: '복잡한 비즈니스 로직과 다양한 인프라(DB, MQ, AI) 간의 높은 결합도로 인한 유지보수성 저하',
+                        action: 'Hexagonal Architecture 기반의 계층 분리 및 API/Worker 물리적 역할 분리 설계',
+                        impact: '도메인 로직 보호 및 부하 상황에서의 유연한 확장성(Scalability) 확보'
+                    },
                     {
                         id: 'BE-C01',
                         anchorId: 'backend-spring-hex',
@@ -258,7 +255,7 @@ export const templateConfig = {
                 {
                     title: 'SPRING CORE DECISIONS',
                     desc: '핵심 설계 및 성능 튜닝',
-                    cards: mapCards(["backend-spring-hex", "backend-spring-api-write", "backend-spring-state-management", "backend-spring-auth"])
+                    cards: mapCards(["backend-spring-core", "backend-spring-hex", "backend-spring-api-write", "backend-spring-state-management", "backend-spring-auth"])
                 },
                 {
                     title: 'SPRING INFRA & OPS',
