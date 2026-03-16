@@ -194,6 +194,14 @@ export const templateConfig = {
                         problem: '인증 정책 파편화 및 중복 유저 조회 발생',
                         action: 'JWT Claims 기반 인증 + Redis 연동 단일 보안 필터',
                         impact: '인증 쿼리 최소화(3→1) 및 일관된 보안 정책 강제'
+                    },
+                    {
+                        id: 'BE-C16',
+                        anchorId: 'backend-spring-oauth2',
+                        title: 'OAuth2 소셜 로그인 통합 (DI/DIP 설계)',
+                        problem: '채널 추가 시마다 인증 로직 분기 및 코드 복잡도 증가',
+                        action: '인터페이스 기반 채널 추상화(DI/DIP) 및 벤더 검수(Google/Kakao/Naver) 완료',
+                        impact: 'OCP 준수로 기존 코드 수정 없는 신규 채널 확장 및 일관된 인증 경험 확보'
                     }
                 ],
                 links: [
