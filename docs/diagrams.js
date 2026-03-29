@@ -38,7 +38,7 @@ export const diagrams = {
             EDGE[Cloudflare + Nginx]
             SPRING[Spring API + Worker]
             FASTAPI[FastAPI AI]
-            DATA[(PostgreSQL + Redis + RabbitMQ + Qdrant)]
+            DATA[(PgBouncer + PostgreSQL + Redis + RabbitMQ + Qdrant)]
 
             CLIENT --> EDGE
             EDGE --> SPRING
@@ -75,11 +75,19 @@ export const diagrams = {
             end
 
             subgraph Data [Data Layer]
+                PGB_API[PgBouncer API]
+                PGB_WORKER[PgBouncer Worker]
                 PG[(PostgreSQL)]
                 REDIS[(Redis)]
                 MQ((RabbitMQ todo.exchange))
                 QDRANT[(Qdrant)]
                 LLM[External LLM API]
+            end
+
+            subgraph Obs [Observability]
+                OTEL[OpenTelemetry]
+                PROM[Prometheus / Loki]
+                GRAFANA[Grafana]
             end
 
             Browser -->|HTTPS| CDN
@@ -90,9 +98,12 @@ export const diagrams = {
             API --> AUTH
             API --> REDIS
             API --> MQ
-            API --> PG
+            API --> PGB_API
+            PGB_API --> PG
+
             MQ -->|task events| WORKER
-            WORKER --> PG
+            WORKER --> PGB_WORKER
+            PGB_WORKER --> PG
             WORKER --> EVICT
             EVICT --> REDIS
 
@@ -104,9 +115,17 @@ export const diagrams = {
             RECO --> LLM
             FAPI -->|create selected tasks| API
 
+            API -.->|Traces/Metrics| OTEL
+            WORKER -.->|Traces/Metrics| OTEL
+            FAPI -.->|Traces/Metrics| OTEL
+            OTEL -.-> PROM
+            PROM -.-> GRAFANA
+
             classDef default fill:#161b22,stroke:#30363d,color:#c9d1d9
             classDef accent fill:#161b22,stroke:#58a6ff,color:#58a6ff
+            classDef obs fill:#161b22,stroke:#238636,color:#c9d1d9
             class Browser,API,FAPI,WORKER accent
+            class OTEL,PROM,GRAFANA obs
         `,
     // Backend Services
     'backend-spring-hex': `
@@ -264,7 +283,8 @@ export const diagrams = {
             CRUD --> CH[Create or Update command handlers]
             STATUS --> CH
             CH --> REPO[SpringDataTaskRepositoryPortAdapter]
-            REPO --> DB[(PostgreSQL)]
+            REPO --> POOL[(PgBouncer Worker)]
+            POOL --> DB[(PostgreSQL)]
             CH --> EVT[Task domain events]
             EVT --> EVICT[CacheEvictionListener AFTER_COMMIT]
             EVICT --> RC[(Redis task caches)]
@@ -274,7 +294,7 @@ export const diagrams = {
             classDef o fill:#161b22,stroke:#d29922,color:#c9d1d9
             classDef g fill:#161b22,stroke:#238636,color:#c9d1d9
             class LISTENER,CRUD,STATUS,CH,REPO,EVICT b
-            class Q,DLQ o
+            class Q,DLQ,POOL o
             class DB,RC,EVT g
         `,
 
@@ -753,13 +773,15 @@ export const diagrams = {
 
             subgraph Data [data services]
                 Pg[(postgres)]
-                Pool[(pgbouncer)]
+                PoolApi[(pgbouncer api)]
+                PoolWorker[(pgbouncer worker)]
                 Redis[(redis)]
                 MQ((rabbitmq))
                 Q[(qdrant)]
             end
 
             subgraph Obs [observability]
+                Otel[otel-collector / alloy]
                 Prom[prometheus]
                 Graf[grafana]
                 Loki[loki and promtail]
@@ -772,18 +794,22 @@ export const diagrams = {
             Nginx --> Spring
             Nginx --> Fast
 
-            Spring --> Pool
-            Worker --> Pool
-            Pool --> Pg
+            Spring --> PoolApi
+            Worker --> PoolWorker
+            PoolApi --> Pg
+            PoolWorker --> Pg
             Spring --> Redis
             Spring --> MQ
             Worker --> MQ
             Fast --> Redis
             Fast --> Q
 
-            Prom --> Spring
-            Prom --> Worker
-            Prom --> Fast
+            Otel --> Prom
+            Otel --> Loki
+            Spring -.->|traces/metrics| Otel
+            Worker -.->|traces/metrics| Otel
+            Fast -.->|traces/metrics| Otel
+
             Prom --> Graf
             Prom --> Alert
             Loki --> Graf
@@ -792,8 +818,8 @@ export const diagrams = {
             classDef o fill:#161b22,stroke:#d29922,color:#c9d1d9
             classDef g fill:#161b22,stroke:#238636,color:#c9d1d9
             class CF,Nginx,Spring,Worker,Fast b
-            class DD,Cert,Pool,Pg,Redis,MQ,Q o
-            class Prom,Graf,Loki,Alert g
+            class DD,Cert,PoolApi,PoolWorker,Pg,Redis,MQ,Q o
+            class Otel,Prom,Graf,Loki,Alert g
         `,
 
     'devops-docker-build-map': `
@@ -877,9 +903,13 @@ export const diagrams = {
 
     'devops-observability-pipeline': `
             graph TB
-            Spring[spring actuator] --> Prom[prometheus]
-            Worker[spring-worker 9091] --> Prom
-            Fast[fastapi metrics] --> Prom
+            Spring[spring actuator/OTLP] --> OTEL[otel-collector / alloy]
+            Worker[spring-worker OTLP] --> OTEL
+            Fast[fastapi OTLP] --> OTEL
+            
+            OTEL --> Prom[prometheus]
+            OTEL --> Loki[loki]
+
             RedisEx[redis exporter] --> Prom
             PgEx[postgres and pgbouncer exporter] --> Prom
             Rabbit[rabbitmq 15692] --> Prom
@@ -890,13 +920,13 @@ export const diagrams = {
             Prom --> Alert[alertmanager]
             Alert --> Slack[slack webhook secret]
 
-            Logs[promtail docker logs] --> Loki[loki]
+            Logs[promtail docker logs] --> Loki
             Loki --> Graf
 
             classDef b fill:#161b22,stroke:#58a6ff,color:#c9d1d9
             classDef o fill:#161b22,stroke:#d29922,color:#c9d1d9
             classDef g fill:#161b22,stroke:#238636,color:#c9d1d9
-            class Spring,Worker,Fast,Prom,Graf b
+            class Spring,Worker,Fast,Prom,Graf,OTEL b
             class RedisEx,PgEx,Rabbit,NginxEx,Node o
             class Alert,Slack,Logs,Loki g
         `,
