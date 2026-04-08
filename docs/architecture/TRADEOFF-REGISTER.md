@@ -1,0 +1,54 @@
+# TRADEOFF REGISTER
+
+갱신일: 2026-03-31
+
+- 목적: `L_N_Project/docs`의 architecture 소스를 `문제 / 원인 / 해결 / 결과 / trade-off` 한 줄 데이터로 뽑아둔 bank입니다.
+- 규칙: 각 항목은 설명문이 아니라 조립 재료이며, source는 가장 가까운 근거 문서만 적습니다.
+
+## System Overview
+
+- ARCH-00 | 문제: 고부하 요청에서 지연과 정합성 리스크가 누적됨 | 원인: 코어/AI/운영 경계가 한 런타임에 엉켜 있고 쓰기 경로와 검증·관측 책임이 결합됨 | 해결: Spring Hexagonal + API/Worker 분리 + FastAPI 경계 분리 + 관측/배포 분리 | 결과: READ p95 975ms -> 141ms, WRITE p95 1.9s -> 126ms (@500VU), READ RPS 972 -> 3,680, WRITE RPS 373 -> 916 | trade-off: DLQ/재처리/서비스 간 verify/배포 파이프라인 분기 등 운영 복잡도 증가 | source: [Architecture README](./README.md)
+
+## Backend
+
+- BE-C01 | 문제: 도메인 로직이 인프라 변경에 오염될 위험 | 원인: 포트/어댑터 경계가 약해 의존성이 바깥에서 안으로 섞일 수 있었음 | 해결: Hexagonal Architecture로 Controller/Application/Domain/Adapter 경계 고정 | 결과: 도메인-인프라 분리로 교체/리팩토링 비용 감소 | trade-off: 초기 설계 복잡도와 보일러플레이트 증가 | source: [Backend README](../../Backend/README.md#lm-backend-spring-hex)
+- BE-C02 | 문제: Spring/FastAPI 인증 정책 드리프트와 중복 조회 위험 | 원인: 분산 인증 경로와 refresh/session 관리가 흩어져 있었음 | 해결: Redis 기반 Refresh Session + JwtAuthenticationFilter로 단일 인증 경계 수립 | 결과: 인증 기준 일관성 확보와 불필요한 조회 감소 | trade-off: FastAPI 인증 독립성 감소와 verify 경로 의존 | source: [Backend README](../../Backend/README.md#lm-backend-spring-auth)
+- BE-C16 | 문제: 소셜 로그인 채널 추가 때마다 분기와 코드 복잡도가 증가 | 원인: 벤더별 인증 로직이 서로 다른 형태로 퍼질 수 있었음 | 해결: 인터페이스 기반 채널 추상화와 DI 통합 구조 설계 | 결과: Google/Kakao/Naver 통합 관리와 OCP 기반 확장성 확보 | trade-off: 추상화 계층과 검수 범위가 늘어남 | source: [Backend README](../../Backend/README.md#lm-backend-spring-oauth2)
+- BE-C03 | 문제: 기능 증가 시 변경 영향 범위가 넓어질 위험 | 원인: 도메인/기능 책임이 패키지 경계 없이 퍼질 수 있었음 | 해결: 도메인/기능 중심 패키지 분리 | 결과: 모듈 단위 변경 격리로 유지보수 안정성 강화 | trade-off: 초기 학습 비용과 구조 복잡도 증가 | source: [Backend README](../../Backend/README.md#lm-backend-spring-packages)
+- BE-C04 | 문제: API별 인라인 검증으로 규칙 누락과 편차가 누적 | 원인: 권한/상태/멱등 규칙이 각 API에 분산됨 | 해결: 도메인 경계에 규칙 중앙화 | 결과: 규칙 일관성과 테스트 가능성 확보 | trade-off: 클래스/설계 비용 증가로 초기 속도 저하 | source: [Backend README](../../Backend/BusinessRules.md#lm-backend-spring-domain-rules)
+- BE-C05 | 문제: 비동기 경로에서 상태 불일치 가능성 | 원인: 엔티티 상태 전이가 명시적으로 고정되지 않았음 | 해결: 엔티티 내부 규칙으로 상태 전이 고정 | 결과: 불변조건과 전이 규칙 일관성 확보 | trade-off: 엔티티 모델 복잡도와 구현 난이도 증가 | source: [Backend README](../../Backend/BusinessRules.md#lm-backend-spring-state-management)
+- BE-C06 | 문제: 동기 DB 저장으로 쓰기 지연과 타임아웃이 커짐 | 원인: 요청 스레드가 저장과 발행까지 함께 기다리며 병목이 생김 | 해결: 202 Accepted + Pending + RabbitMQ 비동기 쓰기 경로로 분리 | 결과: WRITE p95 1.9s -> 126ms (@500VU) | trade-off: 정합성 경계와 DLQ/재처리 운영 복잡도 증가 | source: [Backend README](../../Backend/ConcurrencyControl.md#lm-backend-spring-api-write)
+- BE-C07 | 문제: API와 소비 로직 결합 시 고부하에서 응답성이 저하 | 원인: 발행/소비가 한 서버에 혼재함 | 해결: API/Worker 역할 분리 | 결과: 피크 부하에서도 API 경로 보호와 확장성 확보 | trade-off: 배포/모니터링/장애 지점 증가 | source: [Backend README](../../Backend/ConcurrencyControl.md#lm-backend-spring-worker-consume)
+- BE-C08 | 문제: 병목 원인 불명 상태에서 튜닝 회귀가 반복 | 원인: 재현 가능한 측정 루프와 객관적 근거가 부족 | 해결: k6 재현-수정-검증 루프 고정 | 결과: READ p95 975ms -> 141ms, WRITE p95 1.9s -> 126ms | trade-off: 테스트 구축/분석 시간 증가와 저트래픽 과투자 위험 | source: [Backend README](../../Backend/README.md#lm-backend-spring-troubleshooting)
+- BE-C09 | 문제: AI 추론 경로에서 맥락 상실과 복구 일관성 저하 | 원인: 분석 경로가 상태/컨텍스트 없이 단순 호출로만 구성될 수 있었음 | 해결: Spring verify + Redis 세션 + Qdrant 컨텍스트 선행 로딩 | 결과: 분석 맥락 보존과 복구 가능한 경로 확보 | trade-off: 외부 의존성 및 네트워크 hop 증가 | source: [Backend README](../../Backend/README.md#lm-backend-fastapi-analyze)
+- BE-C10 | 문제: AI 경로에서 인증 누락 또는 정책 불일치 위험 | 원인: 분산 서비스에서 인증이 분기될 수 있었음 | 해결: 요청 단위 Spring verify 호출로 보안 강제 | 결과: FastAPI 보호 엔드포인트 인증 일관성 확보 | trade-off: 네트워크 hop 증가와 Spring verify 가용성 의존 | source: [Backend README](../../Backend/README.md#lm-backend-fastapi-auth)
+- BE-C11 | 문제: Flat 구조에서 의존성 얽힘과 교체 난이도 증가 | 원인: API/Service/Domain/Infra 경계가 없으면 테스트 더블 주입이 어려움 | 해결: 계층화된 구조 분리 | 결과: 테스트 가능성과 외부 의존 교체 용이성 확보 | trade-off: 초기 DI/설계 비용 증가 | source: [Backend README](../../Backend/README.md#lm-backend-fastapi-packages)
+- BE-C12 | 문제: LLM 응답 오염이 생성 경로로 전파될 위험 | 원인: 비정형 응답이 파싱 오류와 오입력을 만들 수 있음 | 해결: JSON 정규화 + fallback + 매핑 무결성 검증 | 결과: 파싱 실패와 오입력의 후속 전파 차단 | trade-off: 규칙 분기 코드 증가와 추천 다양성 일부 저하 가능 | source: [Backend README](../../Backend/README.md#lm-backend-fastapi-domain-rules)
+- BE-C13 | 문제: analyze -> feedback -> create 다단계에서 상태 불일치가 발생할 수 있음 | 원인: 세션 lifecycle 관리가 없으면 재시도 시 맥락이 흔들림 | 해결: Redis 세션 수명주기와 스냅샷 갱신 고정 | 결과: 단계 일관성과 재시도 복구성 확보 | trade-off: 세션 만료/정리 운영 부담 증가 | source: [Backend README](../../Backend/README.md#lm-backend-fastapi-state-management)
+- BE-C14 | 문제: 잘못된 선택 인덱스로 오생성 task가 발생할 수 있음 | 원인: 추천-생성 매핑 검증이 부족함 | 해결: 세션 스냅샷 매핑 후 생성 API 위임 | 결과: 유효 인덱스와 매핑 검증으로 오생성 차단 | trade-off: 경로 복잡도와 추가 hop 증가 | source: [Backend README](../../Backend/README.md#lm-backend-fastapi-feedback)
+- BE-C15 | 문제: 외부 의존 장애가 전체 기능으로 전파될 위험 | 원인: 외부 API 실패를 격리하지 않으면 full failure로 번짐 | 해결: verify/fallback/유효성 분기와 graceful degradation 적용 | 결과: 전체 fail-fast 대신 부분 기능 축소로 복구 가능성 확보 | trade-off: 오류 분기 코드 증가와 디버깅 난이도 상승 | source: [Backend README](../../Backend/README.md#lm-backend-fastapi-troubleshooting)
+
+## Frontend
+
+- FE-C01 | 문제: Web/App 간 코드 중복과 플랫폼 독립 로직 관리가 어려움 | 원인: 공통 코어 없이 플랫폼별 구현이 흩어질 수 있었음 | 해결: Turborepo + Core package + platform adapter 구조 | 결과: 빌드 4분 10초 -> 45초, 환경 구축 30분 -> 2분, 런타임 에러 -90%, 코드 재사용 0% -> 100% | trade-off: 패키지 경계와 import 규칙이 늘어나 구조 복잡도가 상승 | source: [Frontend README](../../Frontend/README.md#lm-frontend-monorepo-architecture)
+- FE-C02 | 문제: Spring/FastAPI API 변경과 인증 차이를 프론트가 매번 따라가야 함 | 원인: 두 백엔드의 auth 흐름과 contract가 달라 수동 동기화가 필요함 | 해결: Spring은 fetchBaseQuery+reauth, FastAPI는 fakeBaseQuery+queryFn, 타입은 OpenAPI codegen으로 동기화 | 결과: 타입 자동 생성, 불일치 버그 0건, API 변경 반영 95% 단축 | trade-off: 브리지 abstraction과 backend contract coupling이 생김 | source: [Frontend README](../../Frontend/README.md#lm-frontend-api-bridge)
+- FE-C03 | 문제: 모노레포가 커질수록 패키지 책임과 의존 방향이 흐려짐 | 원인: layer map이 불명확하면 core가 쉽게 오염됨 | 해결: Apps/Platform/Core 패키지 맵과 엄격한 inner dependency 규칙 | 결과: Core 재사용 경로와 import 방향 고정 | trade-off: 더 많은 레이어와 학습 비용 증가 | source: [Frontend README](../../Frontend/README.md#lm-frontend-package-map)
+- FE-C04 | 문제: 202 비동기 흐름에서 UI와 서버 상태가 어긋날 수 있음 | 원인: 상태 소스가 여러 개라 수동 동기화가 필요함 | 해결: RTK Query SSOT + optimistic patch/rollback | 결과: 즉시 UI 반영과 안정적 동기화 확보 | trade-off: Redux boilerplate와 central store complexity 증가 | source: [Frontend README](../../Frontend/README.md#lm-frontend-rtk-single-source)
+- FE-C05 | 문제: UI 컴포넌트에 비즈니스 로직이 섞여 유지보수가 어려움 | 원인: 서비스 조립 지점이 화면 코드에 분산됨 | 해결: CoreServicesProvider composition root와 usecase hooks 분리 | 결과: 컴포넌트 1,200줄 -> 580줄, 테스트 용이성과 재사용성 향상 | trade-off: composition root wiring과 DI setup overhead 증가 | source: [Frontend README](../../Frontend/README.md#lm-frontend-di-composition)
+- FE-C06 | 문제: 순환참조, 빌드 지연, 캐시 오류, update loop, 매핑 오류가 반복됨 | 원인: dependency direction과 state sync rule이 초기에 강제되지 않음 | 해결: TypeScript + ESLint no-cycle + pnpm/Turborepo + normalized IDs + guarded effects | 결과: 런타임 에러 -90%, 빌드 4분 10초 -> 45초, 순환참조 코딩 시점 탐지 | trade-off: stricter rules와 setup complexity가 증가하지만 장기 유지보수 비용은 감소 | source: [Frontend README](../../Frontend/README.md#lm-frontend-troubleshooting-patterns)
+
+## DevOps
+
+- DEV-OVERVIEW | 문제: 홈서버 운영에서 비용, 보안, 성능 검증을 동시에 잡아야 함 | 원인: 관리형 서비스 대비 직접 운영 환경이라 배포와 검증 책임이 커짐 | 해결: 홈서버 + Cloudflare/WireGuard + observability + k6 + CI/CD | 결과: 외부 SSH 차단, IP 은폐, 수동 배포 30분 -> 자동화, FastAPI image 26GB -> 1GB, 빌드 1004s -> 98s | trade-off: 운영 책임과 파이프라인 복잡도 증가 | source: [Dev README](../../Dev/README.md#lm-devops-zero-cost-tradeoff)
+- DEV-C01 | 문제: 변경되지 않은 스택까지 매번 빌드되어 CI가 느려짐 | 원인: monorepo 변경 범위 필터링이 없었음 | 해결: GitHub Actions + paths-filter + 테스트 DB 분리 + stress 스크립트화 | 결과: 코드 푸시만으로 자동 배포와 빠른 피드백 루프 확보 | trade-off: 초기 파이프라인 설정이 복잡해짐 | source: [Dev README](../../Dev/README.md#lm-devops-ci-change-detection)
+- DEV-C02 | 문제: build-only CI는 런타임 통합 실패를 놓칠 수 있음 | 원인: 컨테이너 조합 상태를 실제로 띄워 검증하지 않음 | 해결: dev-CI compose up + health check + frontend/api proxy probe + trivy scan | 결과: 깨진 이미지와 통합 실패를 배포 전에 차단 | trade-off: CI 실행 시간과 topology 복잡도 증가 | source: [Dev README](../../Dev/README.md#lm-devops-ci-integration-gate)
+- DEV-C03 | 문제: 홈서버 배포 경로를 안전하게 열기 어려움 | 원인: direct inbound SSH는 IP/포트를 노출함 | 해결: WireGuard VPN을 통해 배포 시점에만 내부망 접근 후 즉시 해제 | 결과: 포트 개방 없이 안전한 원격 배포 파이프라인 확보 | trade-off: VPN 설정/종료와 branch별 원격 env 관리가 추가됨 | source: [Dev README](../../Dev/README.md#lm-devops-cd-wireguard)
+- DEV-C04 | 문제: 배포 이미지의 버전이 쉽게 흔들릴 수 있음 | 원인: build job 산출물을 mutable tag로 바로 쓰면 drift가 생김 | 해결: digest 기반 retagging으로 stable branch tag에 승격 | 결과: deploy workflow가 안정적인 태그만 당겨 쓰도록 고정 | trade-off: promotion 단계와 tag governance가 추가됨 | source: [Dev README](../../Dev/README.md#lm-devops-image-promotion)
+- DEV-C05 | 문제: 서비스별 compose가 한 덩어리면 환경 편차가 누적됨 | 원인: app/data/monitoring 레이어 경계가 흐렸음 | 해결: edge/app/data/observability topology 분리 | 결과: 실행 편차 제거와 서비스 경계 명확화 | trade-off: compose 설정이 더 크고 유지보수가 어려워짐 | source: [Dev README](../../Dev/README.md#lm-devops-compose-topology)
+- DEV-C06 | 문제: FastAPI 이미지가 너무 크고 빌드가 느림 | 원인: ML deps, cache, runtime layer가 함께 포함됨 | 해결: multi-stage build + .dockerignore + optional deps + CPU-only install | 결과: 26GB -> 1GB, 1004s -> 98s | trade-off: ML 기능은 첫 실행 시 runtime install이 필요할 수 있음 | source: [Dev README](../../Dev/README.md#lm-devops-docker-build-map)
+- DEV-C07 | 문제: Nginx 설정 오류가 build/deploy 이후에야 드러남 | 원인: 템플릿 변수 미치환과 syntax 불일치가 런타임에서야 확인됨 | 해결: template 변수 검증 + nginx syntax test + DEBUG 모드 | 결과: 잘못된 설정은 startup 전에 차단 | trade-off: 더 엄격한 startup path와 검증 코드 증가 | source: [Dev README](../../Dev/README.md#lm-devops-nginx-runtime-validation)
+- DEV-C08 | 문제: 홈서버 외부 접속이 보안 리스크를 만들 수 있음 | 원인: 공개 SSH와 IP 노출이 직접적인 공격면이었음 | 해결: CloudFlare WAF + WireGuard VPN + SSH key-only | 결과: 외부 SSH 차단, IP 은폐, DDoS 방어 적용 | trade-off: VPN-only 접근으로 편의성이 낮아짐 | source: [Dev README](../../Dev/README.md#lm-devops-edge-security)
+- DEV-C09 | 문제: 분산 장애를 빨리 찾고 원인을 좁히기 어려움 | 원인: metrics/logs/alerts가 서로 분리되어 있었음 | 해결: Prometheus + Grafana + Loki + Alertmanager + OTEL 통합 | 결과: 감지와 root cause analysis 경로를 일원화 | trade-off: observability stack 운영과 튜닝 비용 증가 | source: [Dev README](../../Dev/README.md#lm-devops-observability-pipeline)
+- DEV-C10 | 문제: 성능 개선 전후를 객관적으로 증명하기 어려움 | 원인: load scenario가 재현 가능하게 분리되지 않았음 | 해결: k6 auth/read/write 시나리오와 profile, CDN bypass 분리 | 결과: 재현 가능한 부하 테스트와 정량 evidence 확보 | trade-off: 시나리오 유지보수와 테스트 runtime 비용 증가 | source: [Dev README](../../Dev/README.md#lm-devops-k6-load-architecture)
+- DEV-C11 | 문제: stress test가 base environment를 오염시킬 위험 | 원인: 고부하 테스트용 lifecycle이 분리되어 있지 않았음 | 해결: stress profile + On/Refresh/Down lifecycle automation | 결과: 500 -> 2000 VU까지 단계적 부하를 안전하게 운영 | trade-off: 환경 모드와 lifecycle orchestration이 추가됨 | source: [Dev README](../../Dev/README.md#lm-devops-stress-mode-lifecycle)
+- DEV-C12 | 문제: tunnel/proxy/k6 실패가 여러 형태로 반복됨 | 원인: protocol mismatch, redirect loop, summary rounding, resource freeze가 표준화되지 않음 | 해결: pattern-based remediations와 explicit debug/verification | 결과: 반복 실패 유형에 대한 canonical fix 확보 | trade-off: guardrail과 troubleshooting 문서가 늘지만 회귀는 줄어듦 | source: [Dev README](../../Dev/README.md#lm-devops-troubleshooting-patterns)
