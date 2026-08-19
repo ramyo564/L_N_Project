@@ -83,43 +83,55 @@ public void toggleStatus() {
 ---
 
 <a id="lm-backend-spring-domain-rules"></a>
-## 2. 🔐 권한 검증 규칙 (Authorization Rules)
+## 2. 🔐 권한 검증 및 인가 규칙 (Authorization Rules)
 
-### 2.1 프로젝트 소유권 검증
+### 2.1 AOP 기반 선언적 단일 권한 게이트 (@RequireProjectAccess)
 
 **핵심 컴포넌트:**
-- `ProjectAccessVerifier.java`
-- `ProjectOwnershipPersistenceAdapter.java`
+- `ProjectAccessAspect.java` (선언적 AOP 인가 가드)
+- `CachedProjectAccessAdapter.java` (Zero-Qualifier POJO / Transaction Narrowing)
+- `CachedProjectJpaReader.java` (짧은 readOnly 트랜잭션 및 L2 캐시 리더)
 
 ```java
-// ProjectAccessVerifier.java
-public void verify(UUIDv7 projectId, UUIDv7 userId) {
-  boolean isOwner = projectOwnershipPort.isOwner(projectId, userId);
-  if (!isOwner) {
-    log.warn("[ProjectAccessDenied] requestedUserId={}, projectId={}...");
-    throw new ForbiddenProjectAccessException();
+// ProjectAccessAspect.java - AOP 단일 권한 게이트
+@Before("@annotation(com.example.project.common.aop.annotation.RequireProjectAccess) && args(projectId, ..)")
+public void verifyProjectAccess(UUIDv7 projectId) {
+  Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+  if (auth == null || !(auth.getPrincipal() instanceof CustomUserDetails userDetails)) {
+    throw new ForbiddenProjectAccessException("인증되지 않은 사용자입니다.");
   }
+
+  UUIDv7 userId = userDetails.getUserId();
+  // 3단계 계층형 방어망(Pending -> Ownership -> DB)으로 인가 DB 쿼리 최소화
+  projectAccessPort.verifyOwner(projectId, userId);
 }
 ```
 
-**권한 검증 흐름:**
+**3-Tier Fail-Fast 계층형 검증 흐름:**
 
 ```mermaid
 flowchart LR
-    A[요청] --> B{Pending Cache 확인}
-    B -->|캐시 히트| C[접근 허용]
-    B -->|캐시 미스| D{Ownership Cache 확인}
-    D -->|캐시 히트| E[결과 반환]
-    D -->|캐시 미스| F[DB 조회]
-    F --> G[결과 캐싱]
+    A[API 요청] --> B[@RequireProjectAccess AOP]
+    B --> C{1단계: Pending Cache\n(Redis TTL 600s)}
+    C -->|캐시 적중| D[0ms 즉시 승인 🚀]
+    C -->|캐시 미스| E{2단계: Ownership L2\n(Redis Cache)}
+    E -->|캐시 적중| F[소유권 확인 승인]
+    E -->|캐시 미스| G[3단계: SSOT DB\n(짧은 readOnly 트랜잭션)]
+    G --> H[L2 캐싱 후 승인]
 ```
+
+**검증 계층별 역할**:
+1. **1단계 (Pending Cache)**: 새 프로젝트 생성 직후 접근 시, DB 저장이 완료되기 전이라도 트랜잭션 없이 Redis에서 0ms 만에 즉시 승인(Short-Circuit).
+2. **2단계 (Ownership L2 Cache)**: 정상 상태의 프로젝트 소유권 캐시를 확인하여 반복 조회 시 DB I/O 0회 달성.
+3. **3단계 (SSOT DB)**: 캐시가 모두 비어있을 때만 `@Transactional(readOnly=true)`를 통해 DB를 짧게 조회하고 L2 캐시에 적재.
 
 ### 2.2 SubTask 접근 검증
 
 **위치:** `SubTaskAccessVerifier.verify(projectId, taskId, userId)`
 
-1. Project 소유권 확인
+1. Project 소유권 확인 (`@RequireProjectAccess` 또는 `ProjectAccessPort`)
 2. Task가 해당 Project에 속하는지 확인
+3. SubTask가 해당 Task에 속하는지 확인 (계층적 도메인 무결성 보장)
 
 ---
 

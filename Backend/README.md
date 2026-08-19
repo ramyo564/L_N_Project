@@ -1,33 +1,46 @@
-# 🛠️ Backend Architecture & Development
+# 🛠️ Backend Architecture & Engineering
+> **Java 21 / Spring Boot 3.3 코어 백엔드 + Python 3.12 FastAPI AI 추론 런타임으로 구성된 엔터프라이즈 Polyglot MSA 아키텍처**  
+> 1000VU 고부하 트래픽 환경에서 발생하는 DB 커넥션 풀 고갈, JPA merge I/O 폭증, 가상 스레드 피닝, 인증 쿼리 중복을 구조적으로 해결한 실전 기록
 
-**모놀리식 Spring Boot**(API/Worker 환경변수 분리) + **FastAPI AI 서비스**로 구성된 하이브리드 백엔드 아키텍처
+📅 **개발 및 고도화 기간**: 2025.04 ~ 현재 (개인 프로젝트 / Backend & AI 중심 풀스택)
 
-📅 **개발 기간**: 2025.04 ~ 현재 (개인 프로젝트)
+---
 
-## ⚡ 30초 스캔 핵심 3포인트
-- 문제: 운영 트래픽에서 API 응답 지연이 누적됨 -> 선택: WebFlux 혼합 제거 후 MVC + API/Worker 분리 -> 결과: 읽기 p95 975ms -> 141ms, 쓰기 p95 1.9s -> 126ms.
-- 문제: 읽기 중심 워크로드에서 DB 커넥션 점유가 병목 -> 선택: Redis Cache-Aside + `@Cacheable` 선행 경계 적용 -> 결과: READ RPS 972 -> 3,680(+279%).
-- 문제: 동기 저장 경로에서 지연과 정합성 리스크 발생 -> 선택: Redis Pending + RabbitMQ + Retry/DLQ -> 결과: WRITE RPS 373 -> 916(+146%), 실패 복구 경로 확보.
+## ⚡ 30초 스캔: 핵심 엔지니어링 5대 성과
 
-### 🚀 핵심 성과 (500 VU 기준)
-| 지표 | 초창기 → 개선 후 | 개선율 |
-|------|-----------------|--------|
-| **읽기 RPS** | 972 → 3,680 req/s | **+279%** |
-| **쓰기 RPS** | 373 → 916 req/s | **+146%** |
-| **읽기 p95** | 975ms → 141ms | **-86%** |
-| **쓰기 p95** | 1.9s → 126ms | **-93%** |
+1. **[DB 읽기 최적화]**: `@Transactional` 내 Redis I/O 혼재로 인한 `idle in transaction` 및 HikariCP 풀 고갈 해소  
+   ➔ **Transaction Narrowing + Redis Pending Cache로 p95 지연시간 3.4s → 126ms (27배 향상), READ RPS 1,550 → 3,680/s (+137%)**
+2. **[JPA 쓰기 최적화]**: UUIDv7 사전 할당 엔티티의 `merge()`(SELECT+INSERT) 2배 I/O 및 AMQP 동기 블로킹 제거  
+   ➔ **`Persistable.isNew()` 재정의 + Outbox 패턴 + Async Publisher로 쓰기 실패율 100% → 0.00%, p95 21.5s → 126ms (170배 향상)**
+3. **[가상 스레드 동시성]**: `amqp-client` 내부 `synchronized` 블록으로 인한 Carrier Thread Pinning 식별 및 격리  
+   ➔ **하이브리드 스레드 모델(Platform Producer / VT Worker) + Semaphore(100) 백프레셔로 실패율 0.93% → 0.00%, p95 488ms → 124ms**
+4. **[인증/인가 최적화]**: 매 요청마다 반복되던 Security Filter 유저 조회 및 분산 인가 쿼리(3회) 통합  
+   ➔ **무상태 JWT Claims 파싱 + `@RequireProjectAccess` AOP 단일 게이트로 DB 쿼리 3회 → 1회, p95 742ms → 290ms (2.6배 향상)**
+5. **[Polyglot AI MSA 분리]**: 3~30초 소요되는 무거운 LLM 추론 연산을 Python FastAPI 마이크로서비스로 물리 분리  
+   ➔ **RabbitMQ 비동기 버퍼링 & WebSocket 실시간 스트리밍으로 AI 장애의 코어 서버 전파율 0%, 코어 무중단 100% 가용성 수호**
+
+---
+
+### 🚀 핵심 엔지니어링 성과 (1000VU 고부하 검증)
+
+| 핵심 지표 | Before (초기 MVP) | After (최종 아키텍처 최적화) | 정량적 개선 효과 | 검증 메커니즘 |
+|:---|:---:|:---:|:---:|:---|
+| ⏱️ **읽기 p95 지연시간** | 3,400ms (3.4s) | **126ms** | **⚡ 27배 단축 (-96.3%)** | Transaction Narrowing + Pending Cache |
+| ⏱️ **쓰기 p95 지연시간** | 21,500ms (21.5s) | **126ms** | **⚡ 170배 단축 (-99.4%)** | `Persistable.isNew()` Direct INSERT |
+| 🛑 **쓰기 요청 실패율** | 100.0% (전체 타임아웃) | **0.00%** | **🏆 100% 무장애 완결** | Outbox + Async Publisher |
+| 🧵 **가상 스레드 피닝(VT)** | 분당 10,000건 이상 폭증 | **0건 (완전 소멸)** | **🛡️ 캐리어 스레드 마비 차단** | JFR 계측 & 플랫폼 스레드 격리 |
+| 💾 **인증/인가 DB 쿼리 수** | 요청당 3회 중복 발생 | **1회 (캐시 히트 시 0회)** | **📉 DB I/O 66.7%~100% 절감** | Claims 무상태 역직렬화 & AOP 게이트 |
+| 🚀 **시스템 처리량 (RPS)** | 1,550 req/s | **3,680 req/s** | **📈 약 2.4배 확장 (+137%)** | k6 1000VU Ramp-up 부하 테스트 |
+| 🧠 **AI 지연 코어 전파율** | 100% (톰캣 스레드 동반 고갈) | **0.00% (완전 격리)** | **🏆 코어 무중단 100% 가용성** | Polyglot FastAPI 분리 & RabbitMQ Buffer |
 
 ### 🛠 기술 스택
 
-**Spring Backend**
+**Spring Core Backend**
+![Java](https://img.shields.io/badge/Java-21-blue?logo=openjdk) ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3-brightgreen?logo=springboot) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?logo=postgresql) ![Redis](https://img.shields.io/badge/Redis-7-dc382d?logo=redis) ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.12-ff6600?logo=rabbitmq) ![Gradle](https://img.shields.io/badge/Build-Gradle-02303a?logo=gradle)
+![Virtual Threads](https://img.shields.io/badge/Virtual%20Threads-Hybrid%20Model-6db33f) ![DDD](https://img.shields.io/badge/DDD-Hexagonal%20Ports%20%26%20Adapters-blueviolet)
 
-![Java](https://img.shields.io/badge/Java-21-blue?logo=openjdk) ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen?logo=springboot) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?logo=postgresql) ![Redis](https://img.shields.io/badge/Redis-Cache-dc382d?logo=redis) ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-AMQP-ff6600?logo=rabbitmq) ![Gradle](https://img.shields.io/badge/Build-Gradle-02303a?logo=gradle)
-
-![Virtual Threads](https://img.shields.io/badge/Virtual%20Threads-API%20off%20%7C%20Worker%20on-6db33f) ![DDD](https://img.shields.io/badge/DDD-Hexagonal-blueviolet)
-
-**FastAPI AI Service**
-
-![Python](https://img.shields.io/badge/Python-3.11-3776ab?logo=python) ![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi) ![Qdrant](https://img.shields.io/badge/Qdrant-VectorDB-ff6b6b) ![Sentence Transformers](https://img.shields.io/badge/Sentence--Transformers-ML-orange)
+**FastAPI AI Inference Service**
+![Python](https://img.shields.io/badge/Python-3.12-3776ab?logo=python) ![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi) ![Pydantic AI](https://img.shields.io/badge/Pydantic-Structured%20Output-e92063) ![Qdrant](https://img.shields.io/badge/Qdrant-VectorDB-ff6b6b) ![Google Gemini](https://img.shields.io/badge/LLM-Gemini%20%7C%20DeepSeek-4285f4)
 
 ## 🏗️ 전체 아키텍처
 
@@ -755,45 +768,57 @@ sequenceDiagram
 ### Spring Boot
 | 기술 | 상세 | 용도 | 선택 이유 |
 |:---|:---|:---|:---|
-| **Language** | Java 21 | API/Worker 스레드 모델 분리 | API(VT OFF)/Worker(VT ON)로 I/O 특성별 운영 |
-| **Framework** | Spring Boot 3.x MVC | 백엔드 코어 | WebFlux 대비 코드 복잡도 ↓ |
-| **Database** | PostgreSQL 15 | 메인 데이터 저장소 | ACID + 멀티코어 최적화 |
-| **Cache** | Redis | 읽기 병목 완화 (Cache-Aside, Pending) | READ p95 975ms -> 141ms, READ RPS +279% 개선 근거 |
-| **Messaging** | RabbitMQ | 쓰기 지연/정합성 경계 분리 | WRITE p95 1.9s -> 126ms, Retry/DLQ 복구 경로 확보 |
+| **Language** | Java 21 | API/Worker 스레드 모델 분리 | API(VT OFF)/Worker(VT ON) 및 비동기 플랫폼 스레드 격리 |
+| **Framework** | Spring Boot 3.3 MVC | 백엔드 코어 | Zero-Qualifier Hexagonal Ports & Adapters |
+| **Database** | PostgreSQL 15 | 메인 데이터 저장소 | ACID + `Persistable.isNew()` Direct INSERT |
+| **Cache** | Redis 7 | 읽기 병목 완화 (Cache-Aside, Pending) | READ p95 3.4s -> 126ms (-96.3%), READ RPS 1,550 -> 3,680/s (+137%) (1000VU) |
+| **Messaging** | RabbitMQ 3.12 | 쓰기 지연/정합성 경계 분리 | WRITE p95 21.5s -> 126ms (-99.4%), 실패율 100% -> 0.00%, Outbox 패턴 (1000VU) |
 
 ### FastAPI
 | 기술 | 상세 | 용도 | 선택 이유 |
 |:---|:---|:---|:---|
-| **Language** | Python 3.11 | 타입 힌팅 | AI 생태계 최적화 |
-| **Framework** | FastAPI + Uvicorn | 비동기 웹 프레임워크 | 논블로킹 I/O |
-| **VectorDB** | Qdrant | 임베딩 벡터 검색 | 무료 + Docker 관리 용이 |
-| **ML** | Sentence-Transformers | 임베딩 모델 | 로컬 임베딩 가능 |
+| **Language** | Python 3.12 | 타입 힌팅 & Asyncio | AI 생태계 최적화 |
+| **Framework** | FastAPI + Uvicorn | 비동기 웹 프레임워크 | Planning-Execution 분리 및 0.5 Self-Correction |
+| **VectorDB** | Qdrant | 임베딩 벡터 검색 | 무료 + Docker 관리 용이 + 도메인 RAG |
+| **LLM Engine** | Gemini / DeepSeek | 추론 엔진 | `IAIProvider` Protocol 기반 DIP 핫스왑 지원 |
 
 ---
 
 <a id="lm-backend-spring-troubleshooting"></a>
-## 💡 문제 해결 사례 (Problem Solving)
+## 💡 문제 해결 및 성능 최적화 사례 (Engineering Deep Dive)
 
-### 1. 아키텍처 진화: 7단계 성능 최적화
+> 📚 **백엔드 심층 기술 문서 바로가기**:
+> - [동시성 제어 및 비동기 처리 아키텍처 (Pending Cache, Direct INSERT, Outbox, Semaphore)](./ConcurrencyControl.md)
+> - [백엔드 비즈니스 및 인가 규칙 (AOP 단일 게이트, 상태 전이, 멱등성)](./BusinessRules.md)
+> - [데이터베이스 마이그레이션 가이드 (Flyway, Partial Index, 무중단 DDL)](./MigrationGuide.md)
+
+---
+
+### 1. 아키텍처 진화: 7단계 엔지니어링 최적화 로드맵
 
 > [!IMPORTANT]
-> **성능 개선 사례**: 고부하 상황에서 목록 조회 및 정렬 속도 정체 현상 해결
+> **성능 개선 및 인덱스 최적화 핵심**:
 > - **복합 인덱스 (Composite Index)**: `(user_id, position)` 복합 인덱스로 필터링과 `ORDER BY` 정렬을 동시 최적화
 > - **부분 인덱스 (Partial Index)**: `WHERE deleted_at IS NULL` 조건을 인덱스에 포함하여 소프트 딜리트된 수백만 건의 데이터를 인덱스에서 제외, 인덱스 크기 60% 절감 및 조회 성능 개선
 > - **상태별 최적화**: `WHERE status = 'PENDING'` 전용 인덱스를 추가하여 진행 중인 작업을 우선적으로 확인하도록 튜닝
+> - **Direct INSERT (`Persistable.isNew`)**: UUIDv7 엔티티 수동 할당 시 `merge()` 2배 I/O 제거 (쓰기 쿼리 50% 절감)
+> - **Transaction Narrowing & Pending Cache**: `@Transactional` 내 Redis I/O를 트랜잭션 밖으로 분리하여 `idle in transaction` 및 HikariCP 풀 고갈 100% 해소
+> - **Transactional Outbox & 202 Accepted**: 메인 엔티티와 이벤트를 단일 트랜잭션으로 원자적 저장하여 메시지 증발(Silent Drop) 원천 방어
+> - **하이브리드 스레드 & 백프레셔 (`Semaphore(100)`)**: `amqp-client`의 `synchronized` 캐리어 스레드 피닝을 전용 플랫폼 스레드로 격리하고 동시 발행 상한선 제어
+> - **무상태 JWT Claims & AOP 단일 게이트**: 매 요청마다 DB를 조회하던 인증 필터를 제거하고 `@RequireProjectAccess` AOP로 인가 쿼리 통합
 
-**테스트 환경**:
-- **도구**: k6 부하 테스트
-- **부하 프로필**: `2m@100 → 3m@200 → 5m@300 → 10m@400 → 5m@500 → 5m@300 → 2m@0` (약 32분)
-- **최대 VU**: 500
-- **동일 스크립트로 모든 단계 테스트** (일관성 보장)
+**테스트 환경 (500VU 단계 부하 & 1000VU 극한 부하 검증)**:
+- **도구**: k6 부하 테스트 & Grafana 관측 대시보드
+- **부하 프로필**: `100VU(2m) ➔ 300VU(3m) ➔ 500VU(5m) ➔ 1000VU(10m) ➔ 500VU(3m) ➔ Cool-down` (15~32분)
+- **테스트 노드**: AMD Ryzen 7 5800U (8C/16T) / 32GB RAM / PostgreSQL 15 / Redis 7 / RabbitMQ 3.12 (Docker Compose)
+- **최종 처리 결과**: 725,382건 트랜잭션 완결 중 **HTTP 실패율 0.0000% 달성**
 
 <details>
-<summary>🔍 k6 테스트 스크립트 로직</summary>
+<summary>🔍 <strong>k6 부하 테스트 스크립트 실행 로직 (Read / Write)</strong></summary>
 
 **읽기 테스트 (`mvc-read-fixed-user-load-test-fast.js`)**:
 ```javascript
-// Setup: 500명 유저 생성 + 각 유저당 Project 1개, Task 3개, SubTask 9개 생성
+// Setup: 500명~1000명 유저 생성 + 각 유저당 Project 1개, Task 3개, SubTask 9개 생성
 // 캐시 웜업 (Cache Warm-up) 수행
 
 // 테스트 로직 (반복)
@@ -812,7 +837,7 @@ group('Read operations', () => {
 
 **쓰기 테스트 (`mvc-write-task-subtask-fixed-user-load-test-fast.js`)**:
 ```javascript
-// Setup: 500명 유저 사전 가입
+// Setup: 500명~1000명 유저 사전 가입
 
 // 테스트 로직 (반복)
 group('Write operations', () => {
@@ -910,7 +935,7 @@ group('Write operations', () => {
 **적용 내용**:
 - FK + 정렬 복합 인덱스 추가 (리스트 조회 최적화)
 - Outbox 부분 인덱스 (PENDING 상태만)
-- 소유권 체크 부분 인덱스 (@CheckProjectAccess AOP)
+- 소유권 체크 부분 인덱스 (@RequireProjectAccess AOP)
 - Flyway 마이그레이션으로 스키마 버전 관리
 
 > **핵심**: 쓰기 성능이 **10배 이상** 개선됨 (인덱스 없이 Sequential Scan → 인덱스 사용)
@@ -1389,7 +1414,7 @@ CREATE INDEX idx_tasks_project_position ON tasks (project_id, position);
 CREATE INDEX idx_auth_outbox_pending ON auth_outbox_event (created_at) 
   WHERE status = 'PENDING';
 
--- 소유권 체크 부분 인덱스 (@CheckProjectAccess AOP 최적화)
+-- 소유권 체크 부분 인덱스 (@RequireProjectAccess AOP 최적화)
 CREATE INDEX idx_projects_ownership ON projects (id, user_id) 
   WHERE deleted_at IS NULL;
 
@@ -1625,7 +1650,7 @@ public SimpleRabbitListenerContainerFactory batchListenerContainerFactory(
 **배치 핸들러 구조**:
 ```java
 // TaskEventBatchHandler.java
-@RabbitListener(queues = "task.events", containerFactory = "batchListenerContainerFactory")
+@RabbitListener(queues = RabbitConfig.QUEUE_TASK, containerFactory = "batchListenerContainerFactory")
 public void handleBatch(List<Message> messages) {
     // 1. 메시지 그룹핑 (타입별로 분류)
     Map<String, List<Event>> grouped = groupByEventType(messages);

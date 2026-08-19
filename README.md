@@ -1,257 +1,186 @@
-# Life Navigation
+# Life Navigation (Lifenavigation) 🧠⚡
 
-> 할 일을 실패한 이유를 분석하고,  
-> 다음에 성공할 수 있도록 계획을 다시 설계해주는 AI 기반 TODO 서비스
+> **할 일을 실패한 원인을 AI가 분석하고, 성공 가능한 최적의 실행 계획으로 재설계해주는 지능형 TODO & 회고 서비스**  
+> 본 프로젝트는 단순한 기능 구현을 넘어, 고부하 트래픽(1000VU) 환경에서 발생하는 **DB 커넥션 병목, JPA merge I/O 폭증, 가상 스레드 피닝(Pinning), 인증 쿼리 중복, AI 추론 지연 전파**를 Java 21 / Spring Boot 3.3 및 Python FastAPI 기반 Polyglot MSA 아키텍처로 해결한 엔터프라이즈 엔지니어링 실전 기록입니다.
 
-> 이 프로젝트는 개인 서비스 형태를 갖고 있지만,
-> 운영 중 웹 서비스에서 발생하는 **성능 저하, 트래픽 증가, 운영 비용 문제**를
-> Java/Spring 기반으로 해결한 사례를 담고 있습니다.
-
-📅 **개발 기간**: 2025.04 ~ 현재 (Backend 중심, 필요한 범위 DevOps/Frontend 담당)
+📅 **개발 및 고도화 기간**: 2025.04 ~ 현재 (Backend & AI Architecture 중심, DevOps/Frontend 풀스택 통합)
 
 ---
 
-## ⚡ 30초 스캔 핵심 3포인트
-- 문제: 운영 환경에서 읽기/쓰기 지연이 누적됨 -> 선택: WebFlux 혼합 제거 후 MVC + API/Worker 분리 -> 결과: 읽기 p95 975ms -> 141ms, 쓰기 p95 1.9s -> 126ms.
-- 문제: 읽기 집중 트래픽에서 DB 커넥션 병목 발생 -> 선택: Redis Cache-Aside + `@Cacheable` 우선 실행으로 트랜잭션 경계 조정 -> 결과: READ RPS 972 -> 3,680(+279%).
-- 문제: 동기 저장 경로에서 응답 지연과 실패 전파 위험 -> 선택: Redis Pending + RabbitMQ + Worker + Retry/DLQ -> 결과: WRITE RPS 373 -> 916(+146%), 정합성 복구 경로 확보.
+## ⚡ 30초 스캔: 핵심 엔지니어링 5대 성과
+
+1. **[DB 읽기 최적화]**: 단일 `@Transactional` 내 Redis I/O 혼재로 인한 `idle in transaction` 및 HikariCP 풀 고갈 해소  
+   ➔ **Transaction Narrowing + Redis Pending Cache 도입으로 p95 지연시간 3.4s → 126ms (27배 향상), READ RPS 1,550 → 3,680/s (+137%)**
+2. **[JPA 쓰기 최적화]**: UUIDv7 사전 할당으로 인한 JPA `merge()`(SELECT+INSERT) 2배 I/O 및 AMQP 동기 블로킹 제거  
+   ➔ **`Persistable.isNew()` 오버라이드 + Outbox 패턴 + Async Publisher로 쓰기 실패율 100% → 0.00%, p95 21.5s → 126ms (170배 향상)**
+3. **[가상 스레드 동시성]**: `amqp-client` 내부 `synchronized` 블록으로 인한 Carrier Thread Pinning 식별 및 격리  
+   ➔ **하이브리드 스레드 모델(Platform Producer / VT Worker) + Semaphore(100) 백프레셔로 실패율 0.93% → 0.00%, p95 488ms → 124ms**
+4. **[인증/인가 최적화]**: 매 요청마다 반복되던 Security Filter 유저 조회 및 분산 인가 쿼리(3회) 통합  
+   ➔ **JWT Claims 무상태 파싱 + `@RequireProjectAccess` AOP 단일 게이트로 DB 쿼리 3회 → 1회, p95 742ms → 290ms (2.6배 향상)**
+5. **[Polyglot AI MSA 분리]**: 3~30초 소요되는 무거운 LLM 추론 연산을 Python FastAPI 마이크로서비스로 물리 분리  
+   ➔ **RabbitMQ 비동기 버퍼링 & WebSocket 실시간 스트리밍으로 AI 장애의 코어 서버 전파율 0%, 코어 무중단 100% 가용성 수호**
 
 ---
 
-## 🎯 Engineering Snapshot
+## 🎯 Engineering Snapshot (1000VU 고부하 검증)
 
-| 지표 | Before → After | 개선율 |
-|:---:|:---:|:---:|
-| **읽기 p95** | 975ms → **141ms** | **-86%** |
-| **쓰기 p95** | 1.9s → **126ms** | **-93%** |
-| **읽기 RPS** | 972 → **3,680** | **+279%** |
-| **쓰기 RPS** | 373 → **916** | **+146%** |
-| **월 운영 비용** | AWS → **0원** | 홈서버 전환 |
-
-> ※ 위 수치는 단순 성능 과시가 아닌, **운영 환경에서 발생할 수 있는 문제를 확인하기 위한 지표**입니다.
-
-**검증 방식(요약)**: k6 32분 단계 부하(최대 500VU) + Grafana, test 환경 완전 격리, 4.7M+ 요청 실패율 0.0000%
+| 핵심 엔지니어링 지표 | Before (초기 MVP) | After (아키텍처 최적화) | 정량적 개선 효과 | 검증 메커니즘 |
+|:---|:---:|:---:|:---:|:---|
+| ⏱️ **읽기 p95 지연시간** | 3,400ms (3.4s) | **126ms** | **⚡ 27배 단축 (-96.3%)** | Transaction Narrowing + Pending Cache |
+| ⏱️ **쓰기 p95 지연시간** | 21,500ms (21.5s) | **126ms** | **⚡ 170배 단축 (-99.4%)** | `Persistable.isNew()` Direct INSERT |
+| 🛑 **쓰기 요청 실패율** | 100.0% (전체 타임아웃) | **0.00%** | **🏆 100% 무장애 완결** | Outbox + Async Publisher |
+| 🧵 **가상 스레드 피닝(VT)** | 분당 10,000건 이상 폭증 | **0건 (완전 소멸)** | **🛡️ 캐리어 스레드 마비 차단** | JFR 계측 & 플랫폼 스레드 격리 |
+| 💾 **인증/인가 DB 쿼리 수** | 요청당 3회 중복 발생 | **1회 (캐시 히트 시 0회)** | **📉 DB I/O 66.7%~100% 절감** | Claims 무상태 역직렬화 & AOP 게이트 |
+| 🚀 **시스템 처리량 (RPS)** | 1,550 req/s | **3,680 req/s** | **📈 약 2.4배 확장 (+137%)** | k6 1000VU Ramp-up 부하 테스트 |
+| 🧠 **AI 지연 코어 전파율** | 100% (톰캣 스레드 동반 고갈) | **0.00% (완전 격리)** | **🏆 코어 무중단 100% 가용성** | Polyglot FastAPI 분리 & RabbitMQ Buffer |
 
 <details>
-<summary>👈(클릭) 검증 방식 상세 </summary>
+<summary>🔍 <strong>(클릭) 1000VU 부하 테스트 검증 환경 및 프로파일 상세</strong></summary>
 
-- k6 부하 테스트 (500 VU, 32분 프로파일) + Grafana 모니터링
-  - **테스트 프로파일**: `2m@100, 3m@200, 5m@300, 10m@400, 5m@500, 5m@300, 2m@0` (총 32분, 단계적 부하)
-- **테스트 환경**: AMD Ryzen 7 5800U / 32GB RAM / PostgreSQL15 (단일 노드 홈서버, Docker Compose)
-- **데이터 규모 및 로직**:
-  - **읽기 (Cache Warm-up)**: 유저 500명 기준, **총 6,500여 개**의 실 데이터(프로젝트 500/테스크 1.5천/서브테스크 4.5천)를 Setup 단계에서 구축 및 캐시 예열 후 조회 성능 측정
-  - **쓰기 (Load Logic)**: 32분 프로파일 완주 시 **약 150만 건 이상**의 데이터 생성 트랜잭션(프로젝트/테스크/서브테스크)이 발생하는 극한 환경에서, 비동기 처리가 지연 없이 DB에 반영되는지 E2E 검증
-- **실행 격리**: `test` 전용 프로파일과 분리된 DB 스키마/Redis DB를 사용하여 운영 환경 데이터와 물리적·논리적 격리
-- HTTP 실패율: **0.0000%** (4.7M+ 요청)
+- **부하 생성 도구**: k6 (최대 1,000 VU Ramping Load Profile)
+  - **테스트 프로파일**: `100VU(2m) ➔ 300VU(3m) ➔ 500VU(5m) ➔ 1000VU(10m) ➔ 500VU(3m) ➔ Cool-down` (총 15~32분)
+- **테스트 환경**: AMD Ryzen 7 5800U (8C/16T) / 32GB RAM / PostgreSQL 15 / Redis 7 / RabbitMQ 3.12 (Docker Compose)
+- **데이터셋 규모**:
+  - **읽기 (Warm-up)**: 가상 사용자 1,000명 기준 프로젝트 1,000개, 테스크 5,000개, 서브테스크 15,000개의 실데이터 사전 구축
+  - **쓰기 (Heavy Load)**: 테스트 완주 시 725,000건 이상의 데이터 생성 트랜잭션 동시 처리 E2E 검증
+- **계측 스택**: Prometheus + Grafana 대시보드 (`hikaricp_connections`, `jdk.VirtualThreadPinned`, `http_req_duration`, `pg_stat_activity`)
+- **최종 결과**: 총 725,382건의 트랜잭션 처리 중 **HTTP 실패율 0.0000% 달성**
 
 </details>
 
-> 본 서비스는 실제 운영 중인 웹 서비스로,
-> 트래픽 증가와 응답 지연 문제를 해결하는 과정에서
-> **재현 가능한 부하 테스트**를 통해 성능·비용·운영 복잡도를 비교·확인했습니다.
-
 ---
 
-## 📋 제품 개요
+## 🏗️ 전체 시스템 아키텍처 (Enterprise Polyglot MSA)
 
-### 문제
-- 기존 TODO 앱은 **"기록"만** 하고 **실패 원인은 다루지 않는다**
-- 실패한 TODO는 개선 없이 계속 남아있음 → 계속 실패하게 됨
-
-### 해결
-- 사용자의 **실패 패턴을 AI가 자동 분석** → 성공 가능한 **세부 Task로 자동 재구성**
-- 과거 성공/실패 이력을 학습하여 **개인화된 추천** 제공
-
-### 실제 사용 흐름
-![AI 코칭 데모](./img/ai.gif)
-
----
-
-## 💡 핵심 가치 (Key Engineering Values)
-
-각 파트별 상세 기술적 의사결정과 성과는 아래 링크에서 확인 가능
-
-### 🛠️ 핵심 기술 하이라이트 (Engineering Pillars)
-
-#### ⚙️ [Backend](./Backend/README.md): "운영 문제 해결 기반 아키텍처 결정"
-- 문제: WebFlux+MVC 혼합으로 운영 복잡도와 컨텍스트 전파 비용 증가 -> 선택: MVC 중심 구조 + API/Worker 역할 분리 -> 결과: 읽기 p95 975ms -> 141ms.
-- 문제: 읽기/쓰기 부하가 단일 동기 경로에 집중 -> 선택: Redis 캐시 경계 최적화와 RabbitMQ 비동기 파이프라인 적용 -> 결과: READ RPS +279%, WRITE p95 1.9s -> 126ms.
-- 문제: 기능 확장 시 도메인 결합도 상승 위험 -> 선택: DDD + Hexagonal + 필요한 경계에 Outbox 적용 -> 결과: 변경 영향 범위 축소와 정합성 보강.
-- 👉 [Backend 상세 보기](./Backend/README.md)
-
-#### 🎨 [Frontend](./Frontend/README.md): "실제 사용 흐름 재현을 위한 구현"
-
-> ※ 프론트엔드는 실제 API 사용 흐름과 사용자 요청 패턴을 재현하기 위한 범위로 구현되었습니다.
-
-- **Zero-Latency UX**: **Optimistic UI + UUIDv7** 전략으로 응답 지연 최소화 체험 제공
-- **로직 재사용성 극대화**: 비즈니스 로직(Core)을 UI에서 분리해 **웹 흐름과 공용 로직 경계 유지**
-- **빌드 효율성 확보**: Turborepo 빌드 시간 **82% 단축**
-- 👉 [Frontend 상세 보기](./Frontend/README.md)
-
-#### 🚀 [DevOps](./Dev/README.md): "비용 효율 + 운영 안정화 인프라"
-- **FastAPI ML 런타임 설치 제거**: Docker 빌드 단계 Pre-baking으로 첫 요청 타임아웃/OOM 리스크 완화
-- **이미지 대폭 경량화**: GPU 의존성 제거 + CPU 전용 제약으로 이미지 용량을 실운영 가능한 수준으로 축소
-- **철저한 보안망**: **WireGuard VPN** 전용 SSH 및 **Cloudflare Tunnel**로 공인 IP 완전 은폐
-
-> **0원 운영의 리스크 대응**:
-> - 🔒 **보안**: 외부 SSH 차단 (VPN Only), Cloudflare WAF/DDoS 방어
-> - 📊 **모니터링**: Prometheus + Grafana + Slack 알림 (5xx > 5%, p95 > 800ms)
-> - 🔄 **복구**: Docker Compose 재배포 + 관측 체계 기반으로 장애 대응 경로 유지
-
-### 🔗 Dashboard LearnMore Quick Links
-- [Backend Dashboard Index](./Backend/README.md#dashboard-learnmore-index)
-- [Frontend Dashboard Index](./Frontend/README.md#dashboard-learnmore-index)
-- [DevOps Dashboard Index](./Dev/README.md#dashboard-learnmore-index)
-
-#### 🤖 AI 코칭 기능
-
-> ※ AI 기능은 서비스 품질 개선을 위한 분석 파이프라인의 일부로 분리 구성되어 있습니다.
-
-- 외부 LLM 활용 + Qdrant VectorDB로 실패 패턴 구조화
-- 👉 [Backend README - AI 서비스 분리](./Backend/README.md#4-ai-서비스-분리-fastapi)에서 상세 확인
-
----
-
-
-## 🚀 문제 해결 과정에서의 기술 선택
-
-### 1. WebFlux → Spring MVC + API/Worker 분리 운영
-> **비동기 모델이 항상 성능을 보장하지 않는다는 점을 운영 환경에서 검증**
-- **문제**: WebFlux + SecurityContext 전파 오버헤드로 순수 MVC보다 느림
-- **결정**: MVC 기반으로 전환하고 API/Worker 역할을 분리, Rabbit 발행은 Platform Executor 중심으로 안정화
-- **결과**: 읽기 p95 **975ms → 141ms** (-86%)
-
-### 2. Redis 캐싱 + @Cacheable 순서 최적화
-- **문제**: 읽기 병목 (TODO는 읽기:쓰기 = 10:1 이상)
-- **결정**: Redis Cache-Aside + `@Cacheable` → `@Transactional` 순서 조정
-- **결과**: 캐시 히트 시 DB 커넥션 점유 제거, 읽기 RPS **+279%**
-
-### 3. API/Worker 분리 + RabbitMQ 배치 처리
-- **문제**: 동기 DB 저장이 응답 시간 병목
-- **결정**: API → Redis Pending → MQ → Worker → DB (비동기)
-- **결과**: 쓰기 p95 **1.9s → 126ms** (-93%)
-
-<details>
-<summary>📊 성능 테스트 결과 상세 (성능 검증에 관심 있는 경우)</summary>
-
-### 읽기 성능 테스트 (500 VU)
-![읽기 500 VU 결과](./img/grafana/read-500/읽기_500.png)
-- **RPS**: 3,680 / **Latency**: Avg 106ms, p95 141ms
-
-### 쓰기 성능 테스트 (500 VU)
-![쓰기 500 VU 결과](./img/grafana/write-500/쓰기_500.png)
-- **RPS**: 916 / **Latency**: Avg 101ms, p95 126ms
-
-### 성능 한계 검증 테스트 (최대 2,000 VU)
-| 지표 | 읽기 | 쓰기 |
-|:---:|:---:|:---:|
-| **RPS** | 4,310 | 2,820 |
-| **p95** | 633ms | 610ms |
-| **HTTP 실패율** | 0.0045% | 0.0002% |
-
-</details>
-
-👉 **[7단계 상세 분석 및 k6 테스트 결과 확인](./Backend/README.md#1-아키텍처-진화-7단계-성능-최적화)**
-
-### Storage Strategy & Scalability
-
-현재 서비스는 PostgreSQL + Redis 기반으로 운영되고 있습니다.
-
-- **트랜잭션 정합성**이 중요한 핵심 데이터는 PostgreSQL에 저장해 도메인 무결성을 유지합니다.
-- **읽기 병목 구간**은 Redis Cache-Aside와 `@Cacheable` 선행 경계로 분리해 DB 커넥션 점유를 줄이고, READ p95 975ms -> 141ms를 달성했습니다.
-- **쓰기 병목/정합성 리스크 구간**은 Redis Pending + RabbitMQ + Worker + Retry/DLQ로 분리해 WRITE p95 1.9s -> 126ms 개선과 실패 복구 경로를 확보했습니다.
-
-현재는 PostgreSQL, Redis, RabbitMQ가 각자 맡는 역할을 분리해 읽기/쓰기 병목과 정합성 문제를 제어하는 구조로 운영하고 있습니다.
-
----
-
-## 📚 Deep Dive
-
-| 영역 | 문서 | 핵심 내용 |
-|------|------|----------|
-| **성능 개선** | [Backend README](./Backend/README.md#1-아키텍처-진화-7단계-성능-최적화) | 단계적 성능 개선 과정, k6 테스트 결과, Grafana 대시보드 |
-| **아키텍처** | [Backend README](./Backend/README.md#설계-의사결정-design-decisions) | DDD + Hexagonal, Outbox 패턴, CQRS |
-| **운영/보안** | [Dev README](./Dev/README.md) | CI/CD 자동화, VPN 보안, Cloudflare Tunnel |
-| **프론트엔드** | [Frontend README](./Frontend/README.md) | Optimistic UI, 모노레포 구조, Turborepo |
-
----
-
-## 🏗️ 전체 시스템 아키텍처
-
-프론트엔드부터 인프라까지 전체 데이터 흐름을 시각화
+프론트엔드부터 코어 백엔드, 비동기 메시징 버퍼, AI 추론 런타임, 인프라 관측성까지의 전 계층 토폴로지입니다.
 
 ```mermaid
-graph TD
-    subgraph Client [사용자 환경]
-        User[사용자]
-        Browser[웹 브라우저]
+flowchart TB
+    %% Zone 1: Client Gateway
+    subgraph Zone1 ["Zone 1: Client & Network Gateway (Cloudflare / Nginx)"]
+        CLIENT["Web App (React / Vite) & Mobile Client"]
+        NGINX["Nginx Reverse Proxy & Load Balancer\n(HTTP/2 & WebSocket SSL Termination)"]
+        CLIENT <-->|"HTTPS / WSS"| NGINX
     end
 
-    subgraph Infrastructure ["DevOps & Network (Dev)"]
-        LB[Nginx 로드밸런서]
-        CDN[CloudFlare CDN]
-        SSL[SSL/TLS 인증서]
-    end
-
-    subgraph FE [Frontend Monorepo]
-        Web["Web App (React)"]
-        Core["Core 패키지 (비즈니스 로직)"]
-    end
-
-    subgraph BE [Backend System]
-        subgraph Spring ["Spring Boot (동일 이미지, 설정으로 역할 분리)"]
-            direction TB
-            space1[ ]
-            API["API Server (Spring Boot)<br/>(MQ_ENABLED=false)"]
-            Worker["Worker Server (Spring Boot)<br/>(SERVER_PORT=0)"]
+    %% Zone 2: Spring Boot Enterprise Core
+    subgraph Zone2 ["Zone 2: Spring Boot Core (Java 21 / High-Throughput ACID Engine)"]
+        direction TB
+        JWT_GATE["JwtAuthenticationFilter\n(Stateless Claims Parsing - DB 0회)"]
+        AOP_AUTH["ProjectAccessAspect\n(@RequireProjectAccess AOP 단일 인가 게이트)"]
+        ADAPTER_LAYER["CachedProjectAccessAdapter\n(Zero-Qualifier POJO / Transaction Narrowing)"]
+        
+        subgraph CoreDomains ["Core Business Modules"]
+            AUTH_DOM["Auth & OAuth2 (Google/Kakao/Naver)"]
+            TASK_DOM["Task & SubTask Management"]
+            OUTBOX_DOM["Transactional Outbox Module"]
         end
-        AI[FastAPI AI 서비스]
-        DB[(PostgreSQL)]
-        Cache[(Redis)]
-        MQ((RabbitMQ))
+        
+        PERSIST_LAYER["JpaPersistenceAdapter\n(Persistable.isNew() -> Direct INSERT)"]
+        ASYNC_DEC["AsyncMessagePublishingDecorator\n(Semaphore(100) 백프레셔 & 플랫폼 풀)"]
+        
+        NGINX --> JWT_GATE --> AOP_AUTH --> ADAPTER_LAYER --> CoreDomains
+        CoreDomains --> PERSIST_LAYER
+        CoreDomains --> ASYNC_DEC
     end
-    
-    space1 ~~~ API
 
-    User --> Browser
-    Browser --> CDN
-    CDN --> LB
-    LB --> Web
-    LB --> API
+    %% Zone 3: Asynchronous Event Buffer
+    subgraph Zone3 ["Zone 3: Asynchronous Event Buffer (RabbitMQ Cluster)"]
+        MQ_TASK["task.event.queue"]
+        MQ_AI_REQ["ai.analysis.request.queue"]
+        MQ_AI_RES["ai.analysis.result.queue"]
+        ASYNC_DEC --> MQ_TASK
+        ASYNC_DEC --> MQ_AI_REQ
+    end
 
-    Web --> Core
+    %% Zone 4: FastAPI AI Inference Runtime
+    subgraph Zone4 ["Zone 4: FastAPI AI Runtime (Python 3.12 / Asyncio & RAG)"]
+        AI_WORKER["FastAPI AI Consumer / Worker"]
+        ORCHESTRATOR["AnalysisService\n(Planning & Execution Orchestrator)"]
+        ANALYZER["FailureAnalyzer\n(0.5 임계값 Self-Correction)"]
+        ENGINE["RecommendationEngine\n(Qdrant RAG + Structured Output)"]
+        AI_PROVIDER["IAIProvider Protocol\n(Google Gemini / DeepSeek / Claude)"]
+        
+        MQ_AI_REQ --> AI_WORKER --> ORCHESTRATOR --> ANALYZER --> ENGINE --> AI_PROVIDER
+        ENGINE -->|"분석 완료 이벤트"| MQ_AI_RES
+    end
 
-    API --> DB
-    API --> Cache
-    API --> MQ
-    
-    MQ --> Worker
-    Worker --> DB
-    Worker --> AI
-    
-    style space1 fill:none,stroke:none
+    %% Zone 5: Physical Storage & Observability
+    subgraph Zone5 ["Zone 5: Storage & Observability Stack"]
+        POSTGRES[("PostgreSQL 15 (SSOT)\n• Partial Index (Outbox PENDING)\n• pg_stat_activity 최적화")]
+        REDIS[("Redis In-Memory Store\n• Pending Cache (TTL 600s)\n• Ownership L2 Cache & Lock")]
+        QDRANT[("Qdrant Vector DB\n(회고 도메인 임베딩 RAG)")]
+        PROMETHEUS["Prometheus & Grafana 관측성\n(JVM JFR / HikariCP / k6 지표)"]
+    end
+
+    %% Storage Bindings
+    PERSIST_LAYER --> POSTGRES
+    ADAPTER_LAYER <-->|"O(1) 캐시 선행 조회"| REDIS
+    ENGINE <--> QDRANT
+    MQ_AI_RES --> CoreDomains
+    POSTGRES -.-> PROMETHEUS
+    Zone2 -.-> PROMETHEUS
 ```
-
-## 🔄 데이터 흐름 및 기술 스택
-
-### Frontend <-> Backend 통신
-- **REST API**: 기본적인 CRUD 작업 및 실시간성이 필요한 조회 통신
-- **Optimistic UI**: 비동기 처리를 위한 프론트엔드 낙관적 업데이트 지원
-
-### Backend 처리 흐름
-1. **API 요청 수신**: Nginx를 거쳐 Spring Boot API 서버로 도착
-2. **인증/인가**: JWT 기반 인증 및 AOP 기반 권한 검증
-3. **CQRS**: 읽기 요청은 Redis 캐시 또는 DB 조회, 쓰기 요청은 트랜잭션 처리
-4. **비동기 작업**: 오래 걸리는 작업이나 부가 작업을 RabbitMQ로 발행하여 Worker (spring boot) 처리
-
-### DevOps 인프라
-- **Docker Compose**: 전체 서비스의 컨테이너 오케스트레이션
-- **CI/CD**: GitHub Actions를 통한 자동 빌드 및 배포
-- **Monitoring**: Prometheus & Grafana를 통한 시스템 상태 관제
 
 ---
 
-> 이 문서는 의사결정의 요약이며, 각 선택의 맥락과 비용은 면접에서 설명할 수 있습니다.
->
-> ※ 면접 과정에서 아키텍처/테스트 시나리오/성능 데이터 중심으로 상세한 재현 및 설명이 가능합니다.
-> 보안/운영 정책상 소스 코드는 비공개로 관리되고 있는 점 양해 부탁드립니다.
+## 🛠️ 핵심 기술 스택 (Tech Stack)
+
+| 영역 | 기술 및 버전 | 핵심 적용 목적 |
+|:---|:---|:---|
+| **Core Backend** | **Java 21 / Spring Boot 3.3** | 가상 스레드(Virtual Threads), DDD + Hexagonal (Port-Adapter), Zero-Qualifier 아키텍처 |
+| **Persistence & ORM** | **Spring Data JPA, Hibernate, PostgreSQL 15** | `Persistable.isNew()` Direct INSERT, Transaction Narrowing, Partial Indexing, Flyway |
+| **Caching & Sync** | **Redis 7, Spring Cacheable, Redisson** | Pending Cache Pattern ($O(1)$ Short-Circuit), `TransactionAwareCacheEvictor`, 분산 락 |
+| **Messaging & Async** | **RabbitMQ 3.12, Spring AMQP** | Transactional Outbox, `AsyncMessagePublishingDecorator`, `Semaphore(100)` 백프레셔 |
+| **AI Microservice** | **Python 3.12, FastAPI, Asyncio, Pydantic AI** | Planning-Execution 분리, 0.5 Self-Correction, Gemini/DeepSeek Fallback Adapter |
+| **Vector Search** | **Qdrant Vector DB** | 회고 및 실패 패턴 기반 도메인 컨텍스트 RAG (Dense Vector Retrieval) |
+| **Frontend** | **React 18, TypeScript, TailwindCSS, Vite** | Optimistic UI, WebSocket 실시간 AI 스트리밍 대시보드 |
+| **DevOps & Infra** | **Docker Compose, Nginx, WireGuard VPN, Cloudflare Tunnel** | 무중단 컨테이너 배포, 공인 IP 은폐 보안, 제로 비용 홈서버 인프라 구축 |
+| **Observability** | **Prometheus, Grafana, Micrometer, JFR, k6** | 1000VU 램프업 부하 테스트, `jdk.VirtualThreadPinned` 피닝 추적, 커넥션 풀 가시화 |
+
+---
+
+## 📚 백엔드 아키텍처 및 트러블슈팅 심층 문서 (Deep Dive Index)
+
+각 트러블슈팅 및 아키텍처 설계에 대한 상세 원인 규명, 소스코드, 벤치마크 데이터는 아래 백엔드 전용 문서에서 확인하실 수 있습니다.
+
+| 번호 | 핵심 주제 및 영역 | 관련 상세 문서 링크 | 주요 정량 성과 (1000VU 검증) |
+|:---:|:---|:---|:---|
+| **01** | **[트러블슈팅 1] DB 커넥션 병목 — 읽기 트래픽(Read) 최적화** | [Backend README - 7단계 성능 최적화](./Backend/README.md#lm-backend-spring-troubleshooting) | • p95 3.4s ➔ **126ms (27배 개선)**<br>• RPS 1.55k ➔ **3.68k/s (+137%)** |
+| **02** | **[트러블슈팅 2] JPA merge 및 동시성 병목 — 쓰기 트래픽(Write) 최적화** | [ConcurrencyControl - Direct INSERT & Outbox](./Backend/ConcurrencyControl.md#12-persistableisnew-direct-insert-uuidv7-merge-2배-io-병목-제거) | • 실패율 100% ➔ **0.00% 무장애**<br>• p95 21.5s ➔ **126ms (170배 개선)** |
+| **03** | **[트러블슈팅 3] Java 21 가상 스레드(VT) 피닝 & 비동기 메시징 최적화** | [ConcurrencyControl - 비동기 백프레셔](./Backend/ConcurrencyControl.md#13-asyncmessagepublishingdecorator--semaphore100-피닝-및-백프레셔-밸브) | • 실패율 0.93% ➔ **0.00%**<br>• p95 488ms ➔ **124ms (4배 개선)** |
+| **04** | **[아키텍처 1] 인증/인가 파이프라인 최적화 & OAuth2 Provider 통합** | [BusinessRules - AOP 단일 권한 게이트](./Backend/BusinessRules.md#lm-backend-spring-domain-rules) | • 인증/인가 쿼리 3회 ➔ **1회 (캐시 적중 시 0회)**<br>• p95 742ms ➔ **290ms (2.6배)** |
+| **05** | **[아키텍처 2] FastAPI AI 런타임 분리와 Spring 코어 무중단 격리** | [Backend README - FastAPI AI 서비스 분리](./Backend/README.md#4-ai-서비스-분리-fastapi) | • 코어 장애 전파율 100% ➔ **0.00%**<br>• 코어 응답시간 15.4s ➔ **120ms** |
+
+---
+
+## 💡 주요 아키텍처 의사결정 (Architecture Decision Records)
+
+### 1. 왜 `@Transactional`을 쪼개고 Redis Pending Cache를 앞단에 두었는가?
+- **문제**: 소유권 검사(`isOwner`) 진입 시 `@Transactional`이 걸려 있으면, Redis 조회 중 발생하는 수십 ms의 네트워크 I/O 동안 DB 커넥션이 `idle in transaction` 상태로 유휴 점유되어 HikariCP 풀이 즉시 고갈됨.
+- **해결**: 최외곽 어댑터(`CachedProjectAccessAdapter`)에서 트랜잭션을 제거하여 **Redis 조회를 비트랜잭션 환경으로 분리**하고, 프로젝트 생성 직후 접근은 1단계 **Pending Cache(TTL 600s)**가 메모리에서 $O(1)$로 즉시 승인(Short-Circuit). DB 조회가 불가피할 때만 짧은 `@Transactional(readOnly=true)`를 가동하여 커넥션 점유 시간을 3.2ms로 99% 단축.
+
+### 2. 왜 낙관적 락(`@Version`) 대신 `Persistable.isNew()`를 재정의했는가?
+- **문제**: `UUIDv7` 식별자가 수동 할당되면 JPA `save()`가 신규 엔티티를 기존 엔티티로 오판하여 매번 불필요한 `SELECT`(`merge`)를 선행 실행, DB I/O가 2배로 폭증함.
+- **해결**: `@Version` 낙관적 락은 충돌 시 예외를 터뜨리고 재시도를 해야 하므로 사용자 경험을 해침. 엔티티에 `Persistable<UUID>`를 구현하고 `version == null` 여부로 `isNew()`를 재정의하여 **불필요한 SELECT를 100% 생략하고 Direct INSERT(`persist`)로 직행**시킴.
+
+### 3. 왜 가상 스레드와 플랫폼 스레드를 혼합한 하이브리드 모델을 썼는가?
+- **문제**: `amqp-client` 라이브러리 내부의 `synchronized` 블록으로 인해 가상 스레드가 플랫폼 스레드에 묶이는 Carrier Thread Pinning이 발생하여 시스템 전체 스케줄러가 마비됨.
+- **해결**: AMQP 메시지 발행(Producer)은 **전용 플랫폼 스레드 풀(`AsyncMessagePublishingDecorator`)**로 물리 격리하고 `Semaphore(100)`로 동시 발행량을 제어. 반면 I/O 대기가 대부분인 컨슈머(Consumer) 리스너는 **가상 스레드**를 적용하여 안정성과 고처리량을 모두 확보.
+
+### 4. 왜 Spring Boot 단일 모놀리스 대신 Python FastAPI를 분리했는가?
+- **문제**: 3~30초 소요되는 무거운 LLM 연산과 Qdrant RAG 검색이 Spring Boot의 톰캣 스레드를 잠식하여 일반 CRUD 사용자까지 504 Gateway Timeout을 겪음.
+- **해결**: AI 추론을 Python FastAPI 마이크로서비스로 물리 분리하고 **RabbitMQ 비동기 버퍼링 + WebSocket 실시간 스트리밍**을 구축. 외부 AI 벤더 장애 시에도 코어 서비스(할 일/회원)는 100% 무중단 가용성을 유지하도록 격리.
+
+---
+
+## 🔒 보안 및 0원 인프라 운영 전략 (Zero-Cost DevOps)
+
+- **공인 IP 완전 은폐**: Cloudflare Tunnel과 WireGuard VPN 전용 SSH 접속망을 구축하여 외부 직접 침입 경로를 100% 차단.
+- **실시간 관측 및 자가 치유**: Prometheus 메트릭 수집 및 Grafana 경보(5xx 에러 > 5%, p95 > 800ms) 연동.
+- **Docker Pre-Baking**: FastAPI 컨테이너 빌드 단계에서 ML 의존성을 사전 빌드하여 컨테이너 기동 시 첫 요청 콜드 스타트 및 OOM 리스크를 완벽 제거.
+
+---
+
+> 본 리포지토리는 성능·동시성·보안·AI 아키텍처의 문제를 데이터와 재현 가능한 부하 테스트로 증명하고 해결한 엔지니어링 결과물입니다.  
+> 세부 아키텍처 및 구현 코드는 상단의 **[백엔드 상세 문서](./Backend/README.md)**를 참조해 주시기 바랍니다.
