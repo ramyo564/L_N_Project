@@ -9,28 +9,29 @@
 ## ⚡ 30초 스캔: 핵심 엔지니어링 5대 성과
 
 1. **[DB 읽기 최적화]**: `@Transactional` 내 Redis I/O 혼재로 인한 `idle in transaction` 및 HikariCP 풀 고갈 해소  
-   ➔ **Transaction Narrowing + Redis Pending Cache로 p95 지연시간 3.4s → 126ms (27배 향상), READ RPS 1,550 → 3,680/s (+137%)**
+   ➔ **Transaction Narrowing + Redis Pending Cache로 500VU 읽기 p95 지연시간 975ms~3.4s → 141ms (최대 27배 단축), READ RPS 972 → 3,680/s (+279%)**
 2. **[JPA 쓰기 최적화]**: UUIDv7 사전 할당 엔티티의 `merge()`(SELECT+INSERT) 2배 I/O 및 AMQP 동기 블로킹 제거  
-   ➔ **`Persistable.isNew()` 재정의 + Outbox 패턴 + Async Publisher로 쓰기 실패율 100% → 0.00%, p95 21.5s → 126ms (170배 향상)**
+   ➔ **`Persistable.isNew()` 재정의 + Outbox 패턴 + Async Publisher로 쓰기 실패율 100% → 0.00%, 쓰기 p95 21.5s → 126ms (170배 단축), WRITE RPS 373 → 916/s (+146%)**
 3. **[가상 스레드 동시성]**: `amqp-client` 내부 `synchronized` 블록으로 인한 Carrier Thread Pinning 식별 및 격리  
-   ➔ **하이브리드 스레드 모델(Platform Producer / VT Worker) + Semaphore(100) 백프레셔로 실패율 0.93% → 0.00%, p95 488ms → 124ms**
+   ➔ **하이브리드 스레드 모델(Platform Producer / VT Worker) + Semaphore(100) 백프레셔로 실패율 0.93% → 0.00%, AMQP 발행 p95 488ms → 124ms**
 4. **[인증/인가 최적화]**: 매 요청마다 반복되던 Security Filter 유저 조회 및 분산 인가 쿼리(3회) 통합  
-   ➔ **무상태 JWT Claims 파싱 + `@RequireProjectAccess` AOP 단일 게이트로 DB 쿼리 3회 → 1회, p95 742ms → 290ms (2.6배 향상)**
+   ➔ **무상태 JWT Claims 파싱 + `@RequireProjectAccess` AOP 단일 게이트로 DB 쿼리 3회 → 1회, 인가 p95 742ms → 290ms (2.6배 향상)**
 5. **[Polyglot AI MSA 분리]**: 3~30초 소요되는 무거운 LLM 추론 연산을 Python FastAPI 마이크로서비스로 물리 분리  
-   ➔ **RabbitMQ 비동기 버퍼링 & WebSocket 실시간 스트리밍으로 AI 장애의 코어 서버 전파율 0%, 코어 무중단 100% 가용성 수호**
+   ➔ **RabbitMQ 비동기 버퍼링 & WebSocket 실시간 스트리밍으로 AI 장애의 코어 서버 전파율 0%, 코어 무중단 100% 가용성 수호 (코어 CRUD p95 120ms)**
 
 ---
 
-### 🚀 핵심 엔지니어링 성과 (1000VU 고부하 검증)
+### 🚀 핵심 엔지니어링 성과 (500VU 안정화 & 1,000VU 피크 한계 검증)
 
 | 핵심 지표 | Before (초기 MVP) | After (최종 아키텍처 최적화) | 정량적 개선 효과 | 검증 메커니즘 |
 |:---|:---:|:---:|:---:|:---|
-| ⏱️ **읽기 p95 지연시간** | 3,400ms (3.4s) | **126ms** | **⚡ 27배 단축 (-96.3%)** | Transaction Narrowing + Pending Cache |
-| ⏱️ **쓰기 p95 지연시간** | 21,500ms (21.5s) | **126ms** | **⚡ 170배 단축 (-99.4%)** | `Persistable.isNew()` Direct INSERT |
-| 🛑 **쓰기 요청 실패율** | 100.0% (전체 타임아웃) | **0.00%** | **🏆 100% 무장애 완결** | Outbox + Async Publisher |
+| ⏱️ **쓰기 p95 지연시간** (500VU) | 21,500ms (21.5s) | **126ms** | **⚡ 170배 단축 (-99.4%)** | `Persistable.isNew()` Direct INSERT |
+| ⏱️ **읽기 p95 지연시간** (500VU) | 975ms ~ 3,400ms | **141ms** | **⚡ 7~27배 단축 (-85.5%~-96.3%)** | Transaction Narrowing + Pending Cache |
+| 🛑 **쓰기 요청 실패율** (1,000VU) | 100.0% (전체 타임아웃) | **0.00%** | **🏆 725,382건 무손실 완결** | Outbox + Async Publisher (피크 p95 610ms) |
+| 🚀 **초당 처리량 (READ RPS)** | 972 req/s | **3,680 req/s** | **📈 +279% 확장 (3.8배)** | L1 Pending Cache Short-circuit |
+| 🚀 **초당 처리량 (WRITE RPS)** | 373 req/s | **916 req/s** | **📈 +146% 확장 (2.5배)** | Outbox + Semaphore(100) 비동기 버퍼 |
 | 🧵 **가상 스레드 피닝(VT)** | 분당 10,000건 이상 폭증 | **0건 (완전 소멸)** | **🛡️ 캐리어 스레드 마비 차단** | JFR 계측 & 플랫폼 스레드 격리 |
 | 💾 **인증/인가 DB 쿼리 수** | 요청당 3회 중복 발생 | **1회 (캐시 히트 시 0회)** | **📉 DB I/O 66.7%~100% 절감** | Claims 무상태 역직렬화 & AOP 게이트 |
-| 🚀 **시스템 처리량 (RPS)** | 1,550 req/s | **3,680 req/s** | **📈 약 2.4배 확장 (+137%)** | k6 1000VU Ramp-up 부하 테스트 |
 | 🧠 **AI 지연 코어 전파율** | 100% (톰캣 스레드 동반 고갈) | **0.00% (완전 격리)** | **🏆 코어 무중단 100% 가용성** | Polyglot FastAPI 분리 & RabbitMQ Buffer |
 
 ### 🛠 기술 스택
